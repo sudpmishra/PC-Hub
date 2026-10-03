@@ -1,0 +1,12 @@
+/target
+
+# Written by the hub's Settings sheet at runtime
+hub-settings.toml
+
+# Editors and OS
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+Desktop.ini
+.DS_Store

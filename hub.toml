@@ -1,0 +1,94 @@
+# PC Hub settings. Shortcut changes are picked up automatically; restart the hub
+# for anything else.
+
+# Shortcut tiles per row.
+columns = 5
+
+# Accent color for highlights, gauges and the selected tab.
+accent = "#5EEAD4"
+
+[window]
+# Top-left corner of the touch screen in Windows desktop coordinates (physical pixels).
+# Check Settings > System > Display. If the touch screen sits to the right of a
+# 1920-pixel-wide main monitor, x is 1920. Leave these commented out to open on the
+# main screen.
+# x = 1920
+# y = 0
+# Fill the whole touch screen.
+fullscreen = true
+
+[sensors]
+# The processor fan's name in HWiNFO, if your motherboard doesn't label it "CPU".
+# Many boards call it something like "System 1"; check HWiNFO's sensor list.
+# cpu_fan = "System 1"
+
+# Output device buttons on the Music page. "device" is any part of the name Windows
+# shows in Settings > System > Sound. Without any [[output]] entries, the hub shows
+# every connected device (up to four).
+# [[output]]
+# label = "Speakers"
+# device = "Realtek"
+#
+# [[output]]
+# label = "Headphones"
+# device = "USB Audio"
+
+# Input (microphone) buttons, below the outputs. Same rules as [[output]].
+# [[input]]
+# label = "Desk mic"
+# device = "Microphone"
+
+# Each shortcut does one of three things:
+#   keys = "Ctrl+Shift+M"   presses a key combination (for app hotkeys like Discord mute)
+#   action = "lock"         a built-in action: "lock" or "sleep"
+#   run = "..."             opens an app, file, folder, website, or a URI such as
+#                           spotify: or ms-settings:sound. Optional: args = ["--flag"]
+# Optional: icon = one of mic, mic-off, screenshot, replay, record, lock, activity,
+#   globe, terminal, moon, music, chat, game, folder, settings, speaker, power
+# Optional: hint = small text under the label (defaults to the keys, or "Launch app")
+
+[[shortcut]]
+label = "Mute mic"
+icon = "mic"
+keys = "Ctrl+Shift+M"
+
+[[shortcut]]
+label = "Screenshot"
+icon = "screenshot"
+keys = "Win+Shift+S"
+
+[[shortcut]]
+label = "Save replay"
+icon = "replay"
+keys = "Alt+F10"
+
+[[shortcut]]
+label = "Record"
+icon = "record"
+keys = "Alt+F9"
+
+[[shortcut]]
+label = "Lock PC"
+icon = "lock"
+action = "lock"
+hint = "Win+L"
+
+[[shortcut]]
+label = "Task Manager"
+icon = "activity"
+keys = "Ctrl+Shift+Esc"
+
+[[shortcut]]
+label = "Browser"
+icon = "globe"
+run = "https://www.google.com"
+
+[[shortcut]]
+label = "Terminal"
+icon = "terminal"
+run = "wt"
+
+[[shortcut]]
+label = "Sleep"
+icon = "moon"
+action = "sleep"

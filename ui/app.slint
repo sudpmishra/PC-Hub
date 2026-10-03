@@ -1,0 +1,2541 @@
+// PC Hub UI. Designed for a 1024x600 touch screen; it scales to other sizes.
+// Three pages (Music, Monitor, Shortcuts) slide sideways; swipe or tap the tabs.
+// Everything visual lives here; Rust feeds data in through the Hub global.
+
+import "fonts/Sora-Regular.ttf";
+import "fonts/Sora-Medium.ttf";
+import "fonts/Sora-SemiBold.ttf";
+import "fonts/Sora-Bold.ttf";
+import "fonts/JetBrainsMono-Regular.ttf";
+import "fonts/JetBrainsMono-SemiBold.ttf";
+
+export struct Shortcut {
+    label: string,
+    hint: string,
+    // SVG path commands in a 24x24 box; Rust picks them from the icon name in hub.toml.
+    glyph: string,
+}
+
+export struct AudioDevice {
+    label: string,
+    active: bool,
+}
+
+export global Palette {
+    // The one accent; hub.toml can override it.
+    in-out property <color> accent: #5EEAD4;
+    out property <color> base: #0B0D10;
+    out property <color> panel: #14171C;
+    out property <color> raised: #1B1F26;
+    out property <color> line: #262B33;
+    out property <color> line-strong: #343A44;
+    out property <color> divider: #1E232A;
+    out property <color> text: #E8EAED;
+    out property <color> muted: #9AA3AE;
+    out property <color> faint: #6B7480;
+    out property <color> warn: #F5A524;
+    out property <color> scrim: #050608;
+}
+
+export global Hub {
+    // Header
+    in property <string> clock: "--:--";
+    in property <string> date-text;
+    in property <string> uptime-text;
+    in-out property <int> slide: 1;
+
+    // Music
+    in property <bool> media-available;
+    in property <bool> media-playing;
+    in property <string> track-title;
+    in property <string> track-subtitle;
+    in property <bool> has-art;
+    in property <image> album-art;
+    in property <float> media-progress;
+    in property <string> media-position: "0:00";
+    in property <string> media-duration: "0:00";
+    in property <bool> shuffle;
+    in property <bool> repeat;
+    in property <bool> can-shuffle;
+    in property <bool> can-repeat;
+    in property <bool> audio-available;
+    in-out property <float> volume;
+    in property <[AudioDevice]> outputs;
+    in property <[AudioDevice]> inputs;
+    callback media-previous();
+    callback media-play-pause();
+    callback media-next();
+    callback media-shuffle();
+    callback media-repeat();
+    callback set-volume(float);
+    callback select-output(int);
+    callback select-input(int);
+
+    // Monitor. Readings arrive as display strings; "—" means the sensor isn't available.
+    in property <string> system-summary;
+    in property <float> cpu-load;
+    // True when HWiNFO isn't sharing sensors, so temperature, power and fan can't be read.
+    in property <bool> cpu-sensors-missing;
+    in property <string> cpu-temp: "—";
+    in property <bool> cpu-temp-hot;
+    in property <string> cpu-clock: "—";
+    in property <string> cpu-power: "—";
+    in property <string> cpu-fan: "—";
+    in property <float> gpu-load;
+    in property <string> gpu-temp: "—";
+    in property <bool> gpu-temp-hot;
+    in property <string> gpu-clock: "—";
+    in property <string> gpu-power: "—";
+    in property <string> gpu-fan: "—";
+    in property <string> gpu-fan-unit: "RPM";
+    in property <string> ram-value: "—";
+    in property <string> ram-unit;
+    in property <float> ram-usage;
+    in property <string> vram-value: "—";
+    in property <string> vram-unit;
+    in property <float> vram-usage;
+    in property <string> net-down: "—";
+    in property <string> net-up: "—";
+    in property <string> disk-label: "Storage C:";
+    in property <string> disk-value: "—";
+    in property <string> disk-unit;
+    in property <float> disk-usage;
+
+    // Shortcuts
+    in property <[Shortcut]> shortcuts;
+    in property <int> shortcut-columns: 5;
+    in property <string> last-action: "Tap a tile to run it on your PC";
+    callback launch-shortcut(int);
+    // Opens hub.toml for editing.
+    callback edit-config();
+
+    // Settings, changed on the Settings sheet and Customize hub screen.
+    // Rust loads them at startup and saves them whenever settings-changed fires.
+    // Appearance (the accent itself lives in Palette.accent)
+    // Six hex digits typed on the keypad, without "#"; empty until one is set.
+    in-out property <string> custom-accent;
+    in-out property <bool> clock-24h: true;
+    in-out property <bool> show-date: true;
+    in-out property <bool> show-uptime: true;
+    // Windows: pages are 0 Music, 1 Monitor, 2 Shortcuts
+    in-out property <bool> show-music: true;
+    in-out property <bool> show-monitor: true;
+    in-out property <bool> show-shortcuts: true;
+    in-out property <int> start-page: 1;
+    in-out property <bool> swipe: true;
+    // 0 off, 1 fast, 2 smooth
+    in-out property <int> slide-animation: 2;
+    // Hardware monitor
+    in-out property <int> refresh-seconds: 1;
+    in-out property <bool> fahrenheit;
+    // Temperatures above this many °C turn amber.
+    in-out property <int> heat-warning: 80;
+    in-out property <bool> show-memory: true;
+    in-out property <bool> show-video-memory: true;
+    in-out property <bool> show-network: true;
+    in-out property <bool> show-storage: true;
+    // Music
+    in-out property <bool> show-album-art: true;
+    in-out property <bool> show-outputs: true;
+    in-out property <bool> show-inputs: true;
+    // Shortcuts
+    in-out property <bool> show-key-hints: true;
+    // Display & power
+    in-out property <int> brightness: 100;
+    in-out property <bool> idle-dim: true;
+    in-out property <int> idle-minutes: 5;
+    in-out property <bool> dark-when-locked: true;
+    in property <bool> pc-locked;
+    // Hex keypad helpers, done in Rust because Slint has no string slicing or parsing.
+    // hex-edit applies a key ("0"-"F", "back" or "clear") to the digits typed so far.
+    pure callback hex-edit(string, string) -> string;
+    pure callback hex-complete(string) -> bool;
+    pure callback hex-color(string) -> color;
+    callback settings-changed();
+    callback reset-settings();
+    callback close-hub();
+}
+
+// Seconds since the last touch, for dimming when idle.
+global Activity {
+    in-out property <int> idle-seconds;
+}
+
+global Glyphs {
+    out property <string> music: "M9 18V5l12-2v13 M3 18a3 3 0 1 0 6 0a3 3 0 1 0 -6 0 M15 16a3 3 0 1 0 6 0a3 3 0 1 0 -6 0";
+    out property <string> shuffle: "M16 3h5v5 M4 20L21 3 M21 16v5h-5 M15 15l6 6 M4 4l5 5";
+    out property <string> previous: "M19 20L9 12l10-8z M5 19V5";
+    out property <string> next: "M5 4l10 8-10 8z M19 5v14";
+    out property <string> play: "M7 4v16l13-8z";
+    out property <string> pause: "M8 5v14 M16 5v14";
+    out property <string> repeat: "M17 2l4 4-4 4 M3 11v-1a4 4 0 0 1 4-4h14 M7 22l-4-4 4-4 M21 13v1a4 4 0 0 1-4 4H3";
+    out property <string> volume: "M11 5L6 9H2v6h4l5 4z M15.5 8.5a5 5 0 0 1 0 7 M19 5a10 10 0 0 1 0 14";
+    out property <string> gear: "M9 12a3 3 0 1 0 6 0a3 3 0 1 0 -6 0 M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z";
+    out property <string> close: "M18 6L6 18 M6 6l12 12";
+    out property <string> plus: "M12 5v14 M5 12h14";
+    out property <string> back: "M15 18l-6-6 6-6";
+    out property <string> sliders: "M4 21v-7 M4 10V3 M12 21v-9 M12 8V3 M20 21v-5 M20 12V3 M1 14h6 M9 8h6 M17 16h6";
+}
+
+// A TouchArea that also counts as activity for idle dimming.
+component TapArea inherits TouchArea {
+    pointer-event(event) => {
+        if event.kind == PointerEventKind.down {
+            Activity.idle-seconds = 0;
+        }
+    }
+}
+
+// Stroked line icon on a 24x24 grid.
+component Icon inherits Path {
+    viewbox-width: 24;
+    viewbox-height: 24;
+    width: 24px;
+    height: 24px;
+    fill: transparent;
+    stroke: Palette.text;
+    stroke-width: 2px;
+    stroke-line-cap: round;
+    stroke-line-join: round;
+}
+
+component Label inherits Text {
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: Palette.muted;
+}
+
+// Rectangular button with a border; content goes inside as children.
+component Button inherits Rectangle {
+    callback clicked;
+    in property <bool> enabled: true;
+    in property <brush> fill: Palette.panel;
+    in property <brush> pressed-fill: Palette.raised;
+    in property <brush> outline: Palette.line;
+    border-radius: 14px;
+    border-width: 1px;
+    border-color: outline;
+    background: touch.pressed ? pressed-fill : fill;
+    opacity: enabled ? 1 : 0.35;
+    animate background { duration: 120ms; }
+    @children
+    touch := TapArea {
+        enabled: root.enabled;
+        clicked => { root.clicked(); }
+    }
+}
+
+component CircleButton inherits Button {
+    in property <length> size: 64px;
+    width: size;
+    height: size;
+    border-radius: size / 2;
+}
+
+// A choice among a few options, such as the output device or temperature unit.
+component SegButton inherits Rectangle {
+    callback clicked;
+    in property <string> label;
+    in property <bool> selected;
+    in property <int> weight: 500;
+    height: 44px;
+    preferred-width: caption.preferred-width + 36px;
+    border-radius: 12px;
+    border-width: 1px;
+    border-color: selected ? Palette.accent : Palette.line;
+    background: selected ? Palette.accent.with-alpha(0.15) : touch.pressed ? Palette.line : Palette.raised;
+    animate background, border-color { duration: 150ms; }
+    caption := Text {
+        width: parent.width - 36px;
+        text: root.label;
+        font-size: 14px;
+        font-weight: root.weight;
+        color: root.selected ? Palette.text : Palette.muted;
+        horizontal-alignment: center;
+        overflow: elide;
+    }
+    touch := TapArea {
+        clicked => { root.clicked(); }
+    }
+}
+
+component TabButton inherits Rectangle {
+    callback clicked;
+    in property <string> label;
+    in property <bool> selected;
+    height: 44px;
+    min-width: 116px;
+    preferred-width: max(116px, caption.preferred-width + 36px);
+    border-radius: 22px;
+    background: selected ? Palette.accent : Palette.accent.with-alpha(0);
+    animate background { duration: 250ms; }
+    caption := Text {
+        text: root.label;
+        font-size: 15px;
+        font-weight: 600;
+        color: root.selected ? Palette.base : Palette.muted;
+        animate color { duration: 250ms; }
+    }
+    TapArea {
+        clicked => { root.clicked(); }
+    }
+}
+
+component Slider inherits Rectangle {
+    in-out property <float> value; // 0.0 to 1.0
+    in property <bool> enabled: true;
+    out property <bool> dragging: touch.pressed;
+    callback changed(float);
+    callback released();
+    min-height: 28px;
+    opacity: enabled ? 1 : 0.35;
+
+    function set-from(x: length) {
+        root.value = max(0, min(1, x / root.width));
+        root.changed(root.value);
+    }
+
+    Rectangle {
+        y: (parent.height - self.height) / 2;
+        height: 6px;
+        border-radius: 3px;
+        background: Palette.line;
+        Rectangle {
+            x: 0;
+            width: parent.width * root.value;
+            border-radius: 3px;
+            background: Palette.accent;
+        }
+    }
+    Rectangle {
+        width: 22px;
+        height: 22px;
+        border-radius: 11px;
+        x: (parent.width - self.width) * root.value;
+        y: (parent.height - self.height) / 2;
+        background: Palette.accent;
+    }
+    touch := TapArea {
+        enabled: root.enabled;
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.down {
+                Activity.idle-seconds = 0;
+                root.set-from(self.mouse-x);
+            } else if event.kind == PointerEventKind.up {
+                root.released();
+            }
+        }
+        moved => { root.set-from(self.mouse-x); }
+    }
+}
+
+component Toggle inherits Rectangle {
+    in-out property <bool> on;
+    callback toggled;
+    width: 60px;
+    height: 34px;
+    border-radius: 17px;
+    background: on ? Palette.accent : Palette.line-strong;
+    animate background { duration: 200ms; }
+    Rectangle {
+        width: 28px;
+        height: 28px;
+        border-radius: 14px;
+        x: root.on ? parent.width - self.width - 3px : 3px;
+        y: 3px;
+        background: Palette.text;
+        animate x { duration: 200ms; easing: ease-out; }
+    }
+    TapArea {
+        clicked => {
+            root.on = !root.on;
+            root.toggled();
+        }
+    }
+}
+
+// A thin progress bar.
+component Meter inherits Rectangle {
+    in property <float> value; // 0.0 to 1.0
+    in property <duration> speed: 700ms;
+    height: 6px;
+    border-radius: self.height / 2;
+    background: Palette.line;
+    clip: true;
+    Rectangle {
+        x: 0;
+        width: parent.width * max(0, min(1, root.value));
+        border-radius: parent.border-radius;
+        background: Palette.accent;
+        animate width { duration: root.speed; easing: ease; }
+    }
+}
+
+// A reading with a small unit after it, e.g. "4.85 GHz". The unit hides when there's no value.
+component Reading inherits HorizontalLayout {
+    in property <string> value;
+    in property <string> unit;
+    in property <length> size: 24px;
+    in property <length> unit-size: 13px;
+    in property <color> color: Palette.text;
+    alignment: start;
+    Text {
+        text: root.value;
+        font-family: "JetBrains Mono";
+        font-size: root.size;
+        font-weight: 600;
+        color: root.color;
+        vertical-alignment: bottom;
+    }
+    if root.value != "—" && root.unit != "": VerticalLayout {
+        padding-bottom: root.size * 0.12;
+        Text {
+            text: root.unit;
+            font-size: root.unit-size;
+            color: Palette.muted;
+            vertical-alignment: bottom;
+        }
+    }
+}
+
+component Stat inherits VerticalLayout {
+    in property <string> label;
+    in property <string> value;
+    in property <string> unit;
+    in property <color> color: Palette.text;
+    spacing: 2px;
+    alignment: start;
+    Label { text: root.label; }
+    Reading {
+        value: root.value;
+        unit: root.unit;
+        color: root.color;
+    }
+}
+
+// Circular load gauge.
+component Ring inherits Rectangle {
+    in property <float> value; // 0.0 to 1.0
+    in property <string> name;
+    width: 136px;
+    height: 136px;
+    property <float> shown: max(0, min(0.9999, root.value));
+    animate shown { duration: 700ms; easing: ease; }
+    property <angle> sweep-angle: self.shown * 360deg;
+
+    Rectangle {
+        x: 1.5px;
+        y: 1.5px;
+        width: 133px;
+        height: 133px;
+        border-radius: self.width / 2;
+        border-width: 11px;
+        border-color: Palette.line;
+    }
+    if root.shown > 0.003: Path {
+        x: 0;
+        y: 0;
+        width: 136px;
+        height: 136px;
+        // Slint insets a path by half its stroke on each side before fitting the viewbox,
+        // so cover exactly that inset area to draw in plain pixel coordinates.
+        viewbox-x: 5.5;
+        viewbox-y: 5.5;
+        viewbox-width: 125;
+        viewbox-height: 125;
+        fill: transparent;
+        stroke: Palette.accent;
+        stroke-width: 11px;
+        stroke-line-cap: round;
+        MoveTo {
+            x: 68;
+            y: 7;
+        }
+        ArcTo {
+            x: 68 + 61 * sin(root.sweep-angle);
+            y: 68 - 61 * cos(root.sweep-angle);
+            radius-x: 61;
+            radius-y: 61;
+            large-arc: root.sweep-angle > 180deg;
+            sweep: true;
+        }
+    }
+    VerticalLayout {
+        alignment: center;
+        HorizontalLayout {
+            alignment: center;
+            Reading {
+                value: round(root.value * 100);
+                unit: "%";
+                size: 32px;
+                unit-size: 16px;
+            }
+        }
+        Text {
+            text: root.name;
+            font-size: 12px;
+            letter-spacing: 1.2px;
+            color: Palette.muted;
+            horizontal-alignment: center;
+        }
+    }
+}
+
+component Card inherits Rectangle {
+    background: Palette.panel;
+    border-width: 1px;
+    border-color: Palette.line;
+    border-radius: 20px;
+}
+
+// Processor or graphics card: load ring plus four readings.
+component ChipCard inherits Card {
+    in property <string> name;
+    in property <float> load;
+    in property <string> temp;
+    in property <bool> temp-hot;
+    in property <string> clock;
+    in property <string> clock-unit;
+    in property <string> power;
+    in property <string> fan;
+    in property <string> fan-unit;
+    // Shown under the readings, e.g. why some of them are missing.
+    in property <string> note;
+    HorizontalLayout {
+        padding-left: 22px;
+        padding-right: 22px;
+        padding-top: 18px;
+        padding-bottom: 18px;
+        spacing: 22px;
+        VerticalLayout {
+            alignment: center;
+            Ring {
+                value: root.load;
+                name: root.name;
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            spacing: 12px;
+            GridLayout {
+                spacing: 14px;
+                Row {
+                    Stat {
+                        label: "TEMP";
+                        value: root.temp;
+                        color: root.temp-hot ? Palette.warn : Palette.text;
+                        horizontal-stretch: 1;
+                    }
+                    Stat {
+                        label: "CLOCK";
+                        value: root.clock;
+                        unit: root.clock-unit;
+                        horizontal-stretch: 1;
+                    }
+                }
+                Row {
+                    Stat {
+                        label: "POWER";
+                        value: root.power;
+                        unit: "W";
+                    }
+                    Stat {
+                        label: "FAN";
+                        value: root.fan;
+                        unit: root.fan-unit;
+                    }
+                }
+            }
+            if root.note != "": Text {
+                preferred-width: 0px;
+                text: root.note;
+                font-size: 12px;
+                color: Palette.faint;
+                wrap: word-wrap;
+            }
+        }
+    }
+}
+
+component MeterCard inherits Card {
+    in property <string> label;
+    in property <string> value;
+    in property <string> unit;
+    in property <float> fraction;
+    border-radius: 18px;
+    VerticalLayout {
+        padding-left: 18px;
+        padding-right: 18px;
+        padding-top: 16px;
+        padding-bottom: 16px;
+        alignment: space-between;
+        Label { text: root.label; }
+        Reading {
+            value: root.value;
+            unit: root.unit;
+            size: 22px;
+        }
+        Meter { value: root.fraction; }
+    }
+}
+
+component PageHeader inherits HorizontalLayout {
+    in property <string> title;
+    in property <string> subtitle;
+    height: 48px;
+    spacing: 16px;
+    VerticalLayout {
+        alignment: center;
+        spacing: 2px;
+        horizontal-stretch: 1;
+        Text {
+            text: root.title;
+            font-size: 22px;
+            font-weight: 700;
+            color: Palette.text;
+        }
+        Text {
+            text: root.subtitle;
+            font-size: 13px;
+            color: Palette.muted;
+            overflow: elide;
+        }
+    }
+    @children
+}
+
+component MusicPage inherits Rectangle {
+    out property <bool> dragging: volume.dragging;
+
+    HorizontalLayout {
+        padding-left: 28px;
+        padding-right: 28px;
+        padding-top: 12px;
+        padding-bottom: 28px;
+        spacing: 36px;
+
+        if Hub.show-album-art: VerticalLayout {
+            alignment: center;
+            Rectangle {
+                width: min(340px, root.height - 40px);
+                height: self.width;
+                border-radius: 24px;
+                background: Palette.raised;
+                border-width: 1px;
+                border-color: Palette.line;
+                clip: true;
+                if Hub.has-art: Image {
+                    width: parent.width;
+                    height: parent.height;
+                    source: Hub.album-art;
+                    image-fit: cover;
+                }
+                if !Hub.has-art: Icon {
+                    width: 72px;
+                    height: 72px;
+                    commands: Glyphs.music;
+                    stroke: Palette.faint;
+                    stroke-width: 3px;
+                }
+            }
+        }
+
+        VerticalLayout {
+            alignment: center;
+            spacing: 22px;
+            horizontal-stretch: 1;
+
+            VerticalLayout {
+                spacing: 6px;
+                Text {
+                    text: "NOW PLAYING";
+                    font-size: 13px;
+                    letter-spacing: 1.3px;
+                    color: Palette.accent;
+                }
+                Text {
+                    text: Hub.media-available ? Hub.track-title : "Nothing playing";
+                    font-size: 38px;
+                    font-weight: 700;
+                    color: Hub.media-available ? Palette.text : Palette.muted;
+                    overflow: elide;
+                }
+                Text {
+                    text: Hub.media-available ? Hub.track-subtitle : "Start music in any app to control it here";
+                    font-size: 18px;
+                    color: Palette.muted;
+                    overflow: elide;
+                }
+            }
+
+            VerticalLayout {
+                spacing: 8px;
+                Meter {
+                    height: 8px;
+                    value: Hub.media-progress;
+                    speed: 900ms;
+                }
+                HorizontalLayout {
+                    Text {
+                        text: Hub.media-position;
+                        font-family: "JetBrains Mono";
+                        font-size: 13px;
+                        color: Palette.muted;
+                        horizontal-stretch: 1;
+                    }
+                    Text {
+                        text: Hub.media-duration;
+                        font-family: "JetBrains Mono";
+                        font-size: 13px;
+                        color: Palette.muted;
+                    }
+                }
+            }
+
+            HorizontalLayout {
+                alignment: space-between;
+                height: 84px;
+                VerticalLayout {
+                    alignment: center;
+                    CircleButton {
+                        size: 52px;
+                        enabled: Hub.can-shuffle;
+                        fill: transparent;
+                        outline: transparent;
+                        clicked => { Hub.media-shuffle(); }
+                        Icon {
+                            commands: Glyphs.shuffle;
+                            stroke: Hub.shuffle ? Palette.accent : Palette.muted;
+                        }
+                    }
+                }
+                VerticalLayout {
+                    alignment: center;
+                    CircleButton {
+                        enabled: Hub.media-available;
+                        clicked => { Hub.media-previous(); }
+                        Icon {
+                            width: 26px;
+                            height: 26px;
+                            commands: Glyphs.previous;
+                        }
+                    }
+                }
+                VerticalLayout {
+                    alignment: center;
+                    CircleButton {
+                        size: 84px;
+                        enabled: Hub.media-available;
+                        fill: Palette.accent;
+                        pressed-fill: Palette.accent.darker(0.2);
+                        outline: transparent;
+                        clicked => { Hub.media-play-pause(); }
+                        if Hub.media-playing: Icon {
+                            width: 34px;
+                            height: 34px;
+                            commands: Glyphs.pause;
+                            stroke: Palette.base;
+                            stroke-width: 4px;
+                        }
+                        if !Hub.media-playing: Icon {
+                            x: (parent.width - self.width) / 2 + 3px;
+                            width: 34px;
+                            height: 34px;
+                            commands: Glyphs.play;
+                            fill: Palette.base;
+                            stroke: Palette.base;
+                        }
+                    }
+                }
+                VerticalLayout {
+                    alignment: center;
+                    CircleButton {
+                        enabled: Hub.media-available;
+                        clicked => { Hub.media-next(); }
+                        Icon {
+                            width: 26px;
+                            height: 26px;
+                            commands: Glyphs.next;
+                        }
+                    }
+                }
+                VerticalLayout {
+                    alignment: center;
+                    CircleButton {
+                        size: 52px;
+                        enabled: Hub.can-repeat;
+                        fill: transparent;
+                        outline: transparent;
+                        clicked => { Hub.media-repeat(); }
+                        Icon {
+                            commands: Glyphs.repeat;
+                            stroke: Hub.repeat ? Palette.accent : Palette.muted;
+                        }
+                    }
+                }
+            }
+
+            Rectangle {
+                height: 48px;
+                border-radius: 14px;
+                background: Palette.panel;
+                border-width: 1px;
+                border-color: Palette.line;
+                HorizontalLayout {
+                    padding-left: 16px;
+                    padding-right: 16px;
+                    spacing: 14px;
+                    VerticalLayout {
+                        alignment: center;
+                        Icon {
+                            width: 22px;
+                            height: 22px;
+                            commands: Glyphs.volume;
+                            stroke: Palette.muted;
+                        }
+                    }
+                    Text {
+                        text: "Volume";
+                        width: 60px;
+                        font-size: 14px;
+                        color: Palette.muted;
+                        vertical-alignment: center;
+                    }
+                    volume := Slider {
+                        horizontal-stretch: 1;
+                        enabled: Hub.audio-available;
+                        value <=> Hub.volume;
+                        changed(value) => { Hub.set-volume(value); }
+                    }
+                    Text {
+                        text: round(Hub.volume * 100) + "%";
+                        width: 44px;
+                        font-family: "JetBrains Mono";
+                        font-size: 14px;
+                        color: Palette.text;
+                        horizontal-alignment: right;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+
+            if Hub.show-outputs: HorizontalLayout {
+                spacing: 12px;
+                alignment: start;
+                Text {
+                    text: "Output";
+                    width: 74px;
+                    font-size: 14px;
+                    color: Palette.muted;
+                    vertical-alignment: center;
+                }
+                for output[index] in Hub.outputs: SegButton {
+                    max-width: 240px;
+                    label: output.label;
+                    selected: output.active;
+                    clicked => { Hub.select-output(index); }
+                }
+                if Hub.outputs.length == 0: Text {
+                    height: 44px;
+                    text: "No output devices found";
+                    font-size: 14px;
+                    color: Palette.faint;
+                    vertical-alignment: center;
+                }
+            }
+
+            if Hub.show-inputs: HorizontalLayout {
+                spacing: 12px;
+                alignment: start;
+                Text {
+                    text: "Input";
+                    width: 74px;
+                    font-size: 14px;
+                    color: Palette.muted;
+                    vertical-alignment: center;
+                }
+                for input[index] in Hub.inputs: SegButton {
+                    max-width: 240px;
+                    label: input.label;
+                    selected: input.active;
+                    clicked => { Hub.select-input(index); }
+                }
+                if Hub.inputs.length == 0: Text {
+                    height: 44px;
+                    text: "No input devices found";
+                    font-size: 14px;
+                    color: Palette.faint;
+                    vertical-alignment: center;
+                }
+            }
+        }
+    }
+}
+
+component MonitorPage inherits Rectangle {
+    callback open-settings;
+
+    // Card widths come from the page width, not the cards' content, so changing
+    // readings can't resize them. Matches the layout padding and spacing below.
+    property <length> gap: 16px;
+    property <length> row-width: root.width - 40px;
+    property <length> chip-width: (self.row-width - self.gap) / 2;
+    property <int> tile-count: (Hub.show-memory ? 1 : 0) + (Hub.show-video-memory ? 1 : 0) + (Hub.show-network ? 1 : 0) + (Hub.show-storage ? 1 : 0);
+    property <length> tile-width: (self.row-width - self.gap * max(0, self.tile-count - 1)) / max(1, self.tile-count);
+
+    VerticalLayout {
+        padding-left: 20px;
+        padding-right: 20px;
+        padding-top: 8px;
+        padding-bottom: 20px;
+        spacing: 16px;
+
+        PageHeader {
+            title: "System";
+            subtitle: Hub.system-summary;
+            Button {
+                height: 48px;
+                horizontal-stretch: 0;
+                clicked => { root.open-settings(); }
+                HorizontalLayout {
+                    padding-left: 14px;
+                    padding-right: 18px;
+                    spacing: 10px;
+                    VerticalLayout {
+                        alignment: center;
+                        Icon {
+                            width: 22px;
+                            height: 22px;
+                            commands: Glyphs.gear;
+                            stroke-width: 1.8px;
+                        }
+                    }
+                    Text {
+                        text: "Settings";
+                        font-size: 15px;
+                        font-weight: 600;
+                        color: Palette.text;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+
+        HorizontalLayout {
+            spacing: root.gap;
+            ChipCard {
+                width: root.chip-width;
+                name: "CPU";
+                load: Hub.cpu-load;
+                temp: Hub.cpu-temp;
+                temp-hot: Hub.cpu-temp-hot;
+                clock: Hub.cpu-clock;
+                clock-unit: "GHz";
+                power: Hub.cpu-power;
+                fan: Hub.cpu-fan;
+                fan-unit: "RPM";
+                note: Hub.cpu-sensors-missing ? "Start HWiNFO with shared memory on for temp, power and fan" : "";
+            }
+            ChipCard {
+                width: root.chip-width;
+                name: "GPU";
+                load: Hub.gpu-load;
+                temp: Hub.gpu-temp;
+                temp-hot: Hub.gpu-temp-hot;
+                clock: Hub.gpu-clock;
+                clock-unit: "MHz";
+                power: Hub.gpu-power;
+                fan: Hub.gpu-fan;
+                fan-unit: Hub.gpu-fan-unit;
+            }
+        }
+
+        if Hub.show-memory || Hub.show-video-memory || Hub.show-network || Hub.show-storage: HorizontalLayout {
+            spacing: root.gap;
+            vertical-stretch: 1;
+            if Hub.show-memory: MeterCard {
+                width: root.tile-width;
+                label: "MEMORY";
+                value: Hub.ram-value;
+                unit: Hub.ram-unit;
+                fraction: Hub.ram-usage;
+            }
+            if Hub.show-video-memory: MeterCard {
+                width: root.tile-width;
+                label: "VIDEO MEMORY";
+                value: Hub.vram-value;
+                unit: Hub.vram-unit;
+                fraction: Hub.vram-usage;
+            }
+            if Hub.show-network: Card {
+                width: root.tile-width;
+                border-radius: 18px;
+                VerticalLayout {
+                    padding-left: 18px;
+                    padding-right: 18px;
+                    padding-top: 16px;
+                    padding-bottom: 16px;
+                    alignment: space-between;
+                    Label { text: "NETWORK"; }
+                    VerticalLayout {
+                        spacing: 4px;
+                        Reading {
+                            value: "↓ " + Hub.net-down;
+                            unit: " MB/s";
+                            size: 18px;
+                            unit-size: 12px;
+                        }
+                        Reading {
+                            value: "↑ " + Hub.net-up;
+                            unit: " MB/s";
+                            size: 18px;
+                            unit-size: 12px;
+                        }
+                    }
+                }
+            }
+            if Hub.show-storage: MeterCard {
+                width: root.tile-width;
+                label: Hub.disk-label;
+                value: Hub.disk-value;
+                unit: Hub.disk-unit;
+                fraction: Hub.disk-usage;
+            }
+        }
+    }
+}
+
+component ShortcutTile inherits Rectangle {
+    callback clicked;
+    in property <string> label;
+    in property <string> hint;
+    in property <string> glyph;
+    border-radius: 20px;
+    border-width: 1px;
+    border-color: touch.pressed ? Palette.accent : Palette.line;
+    background: touch.pressed ? Palette.accent.with-alpha(0.15) : Palette.panel;
+    animate background, border-color { duration: 200ms; }
+
+    VerticalLayout {
+        padding: 18px;
+        alignment: space-between;
+        HorizontalLayout {
+            alignment: start;
+            Rectangle {
+                width: 52px;
+                height: 52px;
+                border-radius: 14px;
+                background: touch.pressed ? Palette.accent : Palette.raised;
+                animate background { duration: 200ms; }
+                Icon {
+                    width: 26px;
+                    height: 26px;
+                    commands: root.glyph;
+                    stroke: touch.pressed ? Palette.base : Palette.text;
+                    stroke-width: 1.8px;
+                }
+            }
+        }
+        VerticalLayout {
+            spacing: 4px;
+            Text {
+                text: root.label;
+                font-size: 17px;
+                font-weight: 600;
+                color: Palette.text;
+                overflow: elide;
+            }
+            if Hub.show-key-hints: Text {
+                text: root.hint;
+                font-family: "JetBrains Mono";
+                font-size: 12px;
+                color: Palette.muted;
+                overflow: elide;
+            }
+        }
+    }
+    touch := TapArea {
+        clicked => { root.clicked(); }
+    }
+}
+
+component ShortcutsPage inherits Rectangle {
+    callback edit-shortcuts;
+    VerticalLayout {
+        padding-left: 20px;
+        padding-right: 20px;
+        padding-top: 8px;
+        padding-bottom: 20px;
+        spacing: 16px;
+
+        PageHeader {
+            title: "Shortcuts";
+            subtitle: Hub.last-action;
+            Button {
+                height: 48px;
+                horizontal-stretch: 0;
+                clicked => { root.edit-shortcuts(); }
+                HorizontalLayout {
+                    padding-left: 20px;
+                    padding-right: 20px;
+                    Text {
+                        text: "Edit";
+                        font-size: 15px;
+                        font-weight: 600;
+                        color: Palette.text;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+
+        // Laid out from the model so hub.toml decides the count; the last cell adds a shortcut.
+        grid := Rectangle {
+            vertical-stretch: 1;
+            property <length> gap: 14px;
+            property <int> count: Hub.shortcuts.length + 1;
+            property <int> columns: max(1, Hub.shortcut-columns);
+            property <int> rows: max(1, ceil(self.count / self.columns));
+            property <length> cell-width: (self.width - self.gap * (self.columns - 1)) / self.columns;
+            property <length> cell-height: (self.height - self.gap * (self.rows - 1)) / self.rows;
+
+            for item[index] in Hub.shortcuts: ShortcutTile {
+                x: mod(index, grid.columns) * (grid.cell-width + grid.gap);
+                y: floor(index / grid.columns) * (grid.cell-height + grid.gap);
+                width: grid.cell-width;
+                height: grid.cell-height;
+                label: item.label;
+                hint: item.hint;
+                glyph: item.glyph;
+                clicked => { Hub.launch-shortcut(index); }
+            }
+
+            Rectangle {
+                x: mod(Hub.shortcuts.length, grid.columns) * (grid.cell-width + grid.gap);
+                y: floor(Hub.shortcuts.length / grid.columns) * (grid.cell-height + grid.gap);
+                width: grid.cell-width;
+                height: grid.cell-height;
+                border-radius: 20px;
+                border-width: 1.5px;
+                border-color: Palette.line-strong;
+                background: add.pressed ? Palette.panel : transparent;
+                VerticalLayout {
+                    alignment: center;
+                    spacing: 10px;
+                    HorizontalLayout {
+                        alignment: center;
+                        Icon {
+                            width: 30px;
+                            height: 30px;
+                            commands: Glyphs.plus;
+                            stroke: Palette.muted;
+                        }
+                    }
+                    Text {
+                        text: "Add shortcut";
+                        font-size: 15px;
+                        font-weight: 600;
+                        color: Palette.muted;
+                        horizontal-alignment: center;
+                    }
+                }
+                add := TapArea {
+                    clicked => { root.edit-shortcuts(); }
+                }
+            }
+        }
+    }
+}
+
+// Quick settings, opened from the Monitor page.
+component SettingsSheet inherits Rectangle {
+    callback close;
+    callback customize;
+    width: 400px;
+    background: Palette.panel;
+
+    Rectangle {
+        x: 0;
+        width: 1px;
+        background: Palette.line;
+    }
+    VerticalLayout {
+        padding-left: 24px;
+        padding-right: 24px;
+        padding-top: 20px;
+        padding-bottom: 20px;
+        spacing: 22px;
+
+        HorizontalLayout {
+            Text {
+                text: "Settings";
+                font-size: 22px;
+                font-weight: 700;
+                color: Palette.text;
+                vertical-alignment: center;
+                horizontal-stretch: 1;
+            }
+            Button {
+                width: 48px;
+                height: 48px;
+                fill: Palette.raised;
+                pressed-fill: Palette.line;
+                clicked => { root.close(); }
+                Icon {
+                    width: 22px;
+                    height: 22px;
+                    commands: Glyphs.close;
+                }
+            }
+        }
+
+        VerticalLayout {
+            spacing: 10px;
+            vertical-stretch: 0;
+            Text {
+                text: "Screen brightness · " + Hub.brightness + "%";
+                font-size: 14px;
+                color: Palette.muted;
+            }
+            Slider {
+                height: 36px;
+                value: (Hub.brightness - 30) / 70;
+                changed(value) => { Hub.brightness = round(30 + value * 70); }
+                released => { Hub.settings-changed(); }
+            }
+        }
+
+        VerticalLayout {
+            spacing: 10px;
+            vertical-stretch: 0;
+            Text {
+                text: "Refresh interval";
+                font-size: 14px;
+                color: Palette.muted;
+            }
+            HorizontalLayout {
+                spacing: 8px;
+                for seconds in [1, 2, 5]: SegButton {
+                    horizontal-stretch: 1;
+                    weight: 600;
+                    label: seconds + " s";
+                    selected: Hub.refresh-seconds == seconds;
+                    clicked => {
+                        Hub.refresh-seconds = seconds;
+                        Hub.settings-changed();
+                    }
+                }
+            }
+        }
+
+        VerticalLayout {
+            spacing: 10px;
+            vertical-stretch: 0;
+            Text {
+                text: "Temperature unit";
+                font-size: 14px;
+                color: Palette.muted;
+            }
+            HorizontalLayout {
+                spacing: 8px;
+                SegButton {
+                    horizontal-stretch: 1;
+                    weight: 600;
+                    label: "Celsius";
+                    selected: !Hub.fahrenheit;
+                    clicked => {
+                        Hub.fahrenheit = false;
+                        Hub.settings-changed();
+                    }
+                }
+                SegButton {
+                    horizontal-stretch: 1;
+                    weight: 600;
+                    label: "Fahrenheit";
+                    selected: Hub.fahrenheit;
+                    clicked => {
+                        Hub.fahrenheit = true;
+                        Hub.settings-changed();
+                    }
+                }
+            }
+        }
+
+        HorizontalLayout {
+            spacing: 12px;
+            vertical-stretch: 0;
+            VerticalLayout {
+                alignment: center;
+                spacing: 2px;
+                horizontal-stretch: 1;
+                Text {
+                    text: "Dim when idle";
+                    font-size: 15px;
+                    font-weight: 600;
+                    color: Palette.text;
+                }
+                Text {
+                    text: "After " + Hub.idle-minutes + (Hub.idle-minutes == 1 ? " minute" : " minutes") + " without touch";
+                    font-size: 13px;
+                    color: Palette.muted;
+                }
+            }
+            VerticalLayout {
+                alignment: center;
+                Toggle {
+                    on <=> Hub.idle-dim;
+                    toggled => { Hub.settings-changed(); }
+                }
+            }
+        }
+
+        Rectangle { vertical-stretch: 1; }
+
+        Button {
+            height: 56px;
+            fill: Palette.accent;
+            pressed-fill: Palette.accent.darker(0.2);
+            outline: transparent;
+            clicked => { root.customize(); }
+            HorizontalLayout {
+                alignment: center;
+                spacing: 10px;
+                VerticalLayout {
+                    alignment: center;
+                    Icon {
+                        width: 22px;
+                        height: 22px;
+                        commands: Glyphs.sliders;
+                        stroke: Palette.base;
+                        stroke-width: 2.2px;
+                    }
+                }
+                Text {
+                    text: "Customize hub";
+                    font-size: 16px;
+                    font-weight: 700;
+                    color: Palette.base;
+                    vertical-alignment: center;
+                }
+            }
+        }
+    }
+}
+
+// One line of the Customize hub screen: a title and subtitle on the left, controls
+// (the children) on the right.
+component SettingRow inherits Rectangle {
+    in property <string> title;
+    in property <string> subtitle;
+    in property <bool> divider: true;
+    HorizontalLayout {
+        padding-top: 16px;
+        padding-bottom: 16px;
+        spacing: 24px;
+        VerticalLayout {
+            alignment: center;
+            spacing: 2px;
+            horizontal-stretch: 1;
+            Text {
+                text: root.title;
+                font-size: 16px;
+                font-weight: 600;
+                color: Palette.text;
+            }
+            if root.subtitle != "": Text {
+                text: root.subtitle;
+                font-size: 13px;
+                color: Palette.muted;
+            }
+        }
+        @children
+    }
+    if root.divider: Rectangle {
+        y: parent.height - 1px;
+        height: 1px;
+        background: Palette.divider;
+    }
+}
+
+component SectionTitle inherits Text {
+    font-size: 13px;
+    letter-spacing: 1.3px;
+    color: Palette.muted;
+}
+
+component Swatch inherits Rectangle {
+    callback clicked;
+    in property <color> swatch;
+    property <bool> selected: Palette.accent == root.swatch;
+    width: 44px;
+    height: 44px;
+    border-radius: 22px;
+    border-width: 3px;
+    border-color: selected ? Palette.text : transparent;
+    background: selected ? Palette.base : root.swatch;
+    if root.selected: Rectangle {
+        width: 32px;
+        height: 32px;
+        border-radius: 16px;
+        background: root.swatch;
+    }
+    TapArea {
+        clicked => { root.clicked(); }
+    }
+}
+
+component NavButton inherits Rectangle {
+    callback clicked;
+    in property <string> label;
+    in property <bool> selected;
+    height: 48px;
+    border-radius: 12px;
+    background: selected ? Palette.raised : touch.pressed ? Palette.panel : transparent;
+    HorizontalLayout {
+        padding-left: 16px;
+        Text {
+            text: root.label;
+            font-size: 15px;
+            font-weight: 600;
+            color: root.selected ? Palette.text : Palette.muted;
+            vertical-alignment: center;
+        }
+    }
+    touch := TapArea {
+        clicked => { root.clicked(); }
+    }
+}
+
+// Shows or hides one of the Monitor page's cards.
+component CardChip inherits Rectangle {
+    callback toggled;
+    in property <string> label;
+    in-out property <bool> on;
+    height: 56px;
+    border-radius: 14px;
+    border-width: 1px;
+    border-color: on ? Palette.accent : Palette.line;
+    background: on ? Palette.accent.with-alpha(0.15) : Palette.panel;
+    animate background, border-color { duration: 150ms; }
+    HorizontalLayout {
+        padding-left: 16px;
+        padding-right: 16px;
+        Text {
+            text: root.label;
+            font-size: 15px;
+            font-weight: 600;
+            color: root.on ? Palette.text : Palette.muted;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+        }
+        Text {
+            text: root.on ? "Shown" : "Hidden";
+            font-size: 13px;
+            color: root.on ? Palette.text : Palette.muted;
+            vertical-alignment: center;
+        }
+    }
+    TapArea {
+        clicked => {
+            root.on = !root.on;
+            root.toggled();
+        }
+    }
+}
+
+component HexKey inherits Button {
+    in property <string> label;
+    in property <length> text-size: 20px;
+    height: 48px;
+    horizontal-stretch: 1;
+    fill: Palette.raised;
+    pressed-fill: Palette.line;
+    Text {
+        text: root.label;
+        font-family: "JetBrains Mono";
+        font-size: root.text-size;
+        font-weight: 600;
+        color: Palette.text;
+    }
+}
+
+// On-screen keypad for typing a hex color: the hub's window never takes keyboard focus,
+// and a touch screen often has no keyboard nearby anyway.
+component HexDialog inherits Rectangle {
+    in-out property <string> draft;
+    callback cancel;
+    callback apply;
+    property <bool> complete: Hub.hex-complete(root.draft);
+    background: Palette.scrim.with-alpha(0.7);
+
+    TapArea {
+        clicked => { root.cancel(); }
+    }
+    Rectangle {
+        width: 440px;
+        height: panel.preferred-height;
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        background: Palette.panel;
+        border-width: 1px;
+        border-color: Palette.line;
+        border-radius: 20px;
+        // Swallows taps on the panel so they don't fall through and close it.
+        TouchArea { }
+        panel := VerticalLayout {
+            padding: 24px;
+            spacing: 10px;
+            Text {
+                text: "Custom accent";
+                font-size: 20px;
+                font-weight: 700;
+                color: Palette.text;
+            }
+            HorizontalLayout {
+                spacing: 16px;
+                height: 56px;
+                Rectangle {
+                    width: 56px;
+                    border-radius: 28px;
+                    border-width: 1px;
+                    border-color: Palette.line;
+                    background: root.complete ? Hub.hex-color(root.draft) : Palette.raised;
+                }
+                Rectangle {
+                    horizontal-stretch: 1;
+                    border-radius: 14px;
+                    border-width: 1px;
+                    border-color: root.complete ? Palette.text : Palette.line;
+                    background: Palette.base;
+                    HorizontalLayout {
+                        padding-left: 16px;
+                        padding-right: 16px;
+                        Text {
+                            text: "#" + root.draft;
+                            font-family: "JetBrains Mono";
+                            font-size: 26px;
+                            font-weight: 600;
+                            color: Palette.text;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+            }
+            Text {
+                text: root.complete ? "Tap Apply to use this color" : "Type 6 digits, for example 5EEAD4";
+                font-size: 13px;
+                color: Palette.muted;
+            }
+            for row in [["0", "1", "2", "3"], ["4", "5", "6", "7"], ["8", "9", "A", "B"], ["C", "D", "E", "F"]]: HorizontalLayout {
+                spacing: 8px;
+                for key in row: HexKey {
+                    label: key;
+                    clicked => { root.draft = Hub.hex-edit(root.draft, key); }
+                }
+            }
+            HorizontalLayout {
+                spacing: 8px;
+                HexKey {
+                    label: "Clear";
+                    text-size: 15px;
+                    clicked => { root.draft = Hub.hex-edit(root.draft, "clear"); }
+                }
+                HexKey {
+                    label: "Delete";
+                    text-size: 15px;
+                    clicked => { root.draft = Hub.hex-edit(root.draft, "back"); }
+                }
+            }
+            HorizontalLayout {
+                spacing: 8px;
+                padding-top: 6px;
+                Button {
+                    height: 52px;
+                    horizontal-stretch: 1;
+                    fill: transparent;
+                    clicked => { root.cancel(); }
+                    Text {
+                        text: "Cancel";
+                        font-size: 15px;
+                        font-weight: 600;
+                        color: Palette.text;
+                    }
+                }
+                Button {
+                    height: 52px;
+                    horizontal-stretch: 1;
+                    enabled: root.complete;
+                    fill: Palette.accent;
+                    pressed-fill: Palette.accent.darker(0.2);
+                    outline: transparent;
+                    clicked => { root.apply(); }
+                    Text {
+                        text: "Apply";
+                        font-size: 15px;
+                        font-weight: 700;
+                        color: Palette.base;
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Full-screen settings, opened from the Settings sheet or the Shortcuts page's Edit button.
+component CustomizeScreen inherits Rectangle {
+    // 0 Appearance, 1 Windows, 2 Hardware monitor, 3 Music, 4 Shortcuts, 5 Display & power
+    in-out property <int> section;
+    callback close;
+    background: Palette.base;
+    property <bool> editing-hex;
+    property <string> hex-draft;
+
+    function changed() {
+        Hub.settings-changed();
+    }
+    // Hiding every page would leave nothing to show, so keep the last one.
+    function page-toggled() {
+        if !Hub.show-music && !Hub.show-monitor && !Hub.show-shortcuts {
+            Hub.show-monitor = true;
+        }
+        Hub.settings-changed();
+    }
+    function temperature(celsius: int) -> string {
+        return Hub.fahrenheit ? round(celsius * 9 / 5 + 32) + "°F" : celsius + "°C";
+    }
+
+    VerticalLayout {
+        Rectangle {
+            height: 64px;
+            HorizontalLayout {
+                padding-left: 20px;
+                padding-right: 20px;
+                spacing: 14px;
+                VerticalLayout {
+                    alignment: center;
+                    horizontal-stretch: 0;
+                    Button {
+                        height: 44px;
+                        clicked => { root.close(); }
+                        HorizontalLayout {
+                            padding-left: 10px;
+                            padding-right: 16px;
+                            spacing: 6px;
+                            VerticalLayout {
+                                alignment: center;
+                                Icon {
+                                    width: 22px;
+                                    height: 22px;
+                                    commands: Glyphs.back;
+                                }
+                            }
+                            Text {
+                                text: "Back";
+                                font-size: 15px;
+                                font-weight: 600;
+                                color: Palette.text;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+                }
+                Text {
+                    text: "Customize hub";
+                    font-size: 22px;
+                    font-weight: 700;
+                    color: Palette.text;
+                    vertical-alignment: center;
+                    horizontal-stretch: 1;
+                }
+                VerticalLayout {
+                    alignment: center;
+                    horizontal-stretch: 0;
+                    Button {
+                        height: 44px;
+                        fill: transparent;
+                        clicked => { Hub.reset-settings(); }
+                        HorizontalLayout {
+                            padding-left: 16px;
+                            padding-right: 16px;
+                            Text {
+                                text: "Reset to defaults";
+                                font-size: 14px;
+                                font-weight: 600;
+                                color: Palette.muted;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+                }
+            }
+            Rectangle {
+                y: parent.height - 1px;
+                height: 1px;
+                background: Palette.divider;
+            }
+        }
+
+        HorizontalLayout {
+            vertical-stretch: 1;
+
+            Rectangle {
+                width: 232px;
+                VerticalLayout {
+                    padding-top: 16px;
+                    padding-bottom: 16px;
+                    padding-left: 12px;
+                    padding-right: 12px;
+                    spacing: 4px;
+                    for name[index] in ["Appearance", "Windows", "Hardware monitor", "Music", "Shortcuts", "Display & power"]: NavButton {
+                        label: name;
+                        selected: root.section == index;
+                        clicked => {
+                            root.section = index;
+                            flick.viewport-y = 0;
+                        }
+                    }
+                    Rectangle { vertical-stretch: 1; }
+                    HorizontalLayout {
+                        padding-left: 16px;
+                        Text {
+                            text: "Changes apply instantly";
+                            font-size: 12px;
+                            color: Palette.faint;
+                        }
+                    }
+                }
+                Rectangle {
+                    x: parent.width - 1px;
+                    width: 1px;
+                    background: Palette.divider;
+                }
+            }
+
+            flick := Flickable {
+                horizontal-stretch: 1;
+                viewport-height: max(self.height, content.preferred-height);
+                content := VerticalLayout {
+                    width: flick.width;
+                    padding-left: 32px;
+                    padding-right: 32px;
+                    padding-top: 20px;
+                    padding-bottom: 28px;
+                    alignment: start;
+
+                    if root.section == 0: VerticalLayout {
+                        SectionTitle { text: "APPEARANCE"; }
+                        SettingRow {
+                            title: "Accent color";
+                            subtitle: "Gauges, active tabs and highlights";
+                            HorizontalLayout {
+                                spacing: 10px;
+                                alignment: end;
+                                for color in [#5EEAD4, #F5A524, #8AB4FF, #C4F06A, #FF8FA3]: VerticalLayout {
+                                    alignment: center;
+                                    Swatch {
+                                        swatch: color;
+                                        clicked => {
+                                            Palette.accent = color;
+                                            root.changed();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        SettingRow {
+                            title: "Custom color";
+                            subtitle: Hub.custom-accent == "" ? "Any color, by its hex code" : "#" + Hub.custom-accent;
+                            HorizontalLayout {
+                                spacing: 12px;
+                                alignment: end;
+                                if Hub.custom-accent != "": VerticalLayout {
+                                    alignment: center;
+                                    Swatch {
+                                        swatch: Hub.hex-color(Hub.custom-accent);
+                                        clicked => {
+                                            Palette.accent = Hub.hex-color(Hub.custom-accent);
+                                            root.changed();
+                                        }
+                                    }
+                                }
+                                VerticalLayout {
+                                    alignment: center;
+                                    Button {
+                                        height: 44px;
+                                        clicked => {
+                                            root.hex-draft = Hub.custom-accent;
+                                            root.editing-hex = true;
+                                        }
+                                        HorizontalLayout {
+                                            padding-left: 16px;
+                                            padding-right: 16px;
+                                            Text {
+                                                text: Hub.custom-accent == "" ? "Enter hex code" : "Edit";
+                                                font-size: 14px;
+                                                font-weight: 600;
+                                                color: Palette.text;
+                                                vertical-alignment: center;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        SettingRow {
+                            title: "Clock format";
+                            subtitle: "Shown in the top bar";
+                            HorizontalLayout {
+                                spacing: 8px;
+                                SegButton {
+                                    width: 110px;
+                                    weight: 600;
+                                    label: "24-hour";
+                                    selected: Hub.clock-24h;
+                                    clicked => {
+                                        Hub.clock-24h = true;
+                                        root.changed();
+                                    }
+                                }
+                                SegButton {
+                                    width: 110px;
+                                    weight: 600;
+                                    label: "12-hour";
+                                    selected: !Hub.clock-24h;
+                                    clicked => {
+                                        Hub.clock-24h = false;
+                                        root.changed();
+                                    }
+                                }
+                            }
+                        }
+                        SettingRow {
+                            title: "Show date";
+                            subtitle: "Next to the clock";
+                            VerticalLayout {
+                                alignment: center;
+                                Toggle {
+                                    on <=> Hub.show-date;
+                                    toggled => { root.changed(); }
+                                }
+                            }
+                        }
+                        SettingRow {
+                            title: "Show uptime";
+                            subtitle: "Top-right indicator";
+                            divider: false;
+                            VerticalLayout {
+                                alignment: center;
+                                Toggle {
+                                    on <=> Hub.show-uptime;
+                                    toggled => { root.changed(); }
+                                }
+                            }
+                        }
+                    }
+
+                    if root.section == 1: VerticalLayout {
+                        SectionTitle { text: "WINDOWS"; }
+                        SettingRow {
+                            title: "Music window";
+                            subtitle: "Now playing and volume";
+                            VerticalLayout {
+                                alignment: center;
+                                Toggle {
+                                    on <=> Hub.show-music;
+                                    toggled => { root.page-toggled(); }
+                                }
+                            }
+                        }
+                        SettingRow {
+                            title: "Monitor window";
+                            subtitle: "CPU, GPU and system stats";
+                            VerticalLayout {
+                                alignment: center;
+                                Toggle {
+                                    on <=> Hub.show-monitor;
+                                    toggled => { root.page-toggled(); }
+                                }
+                            }
+                        }
+                        SettingRow {
+                            title: "Shortcuts window";
+                            subtitle: "Tiles that send key combos";
+                            VerticalLayout {
+                                alignment: center;
+                                Toggle {
+                                    on <=> Hub.show-shortcuts;
+                                    toggled => { root.page-toggled(); }
+                                }
+                            }
+                        }
+                        SettingRow {
+                            title: "Open on";
+                            subtitle: "Window shown when the hub starts";
+                            HorizontalLayout {
+                                spacing: 8px;
+                                for name[index] in ["Music", "Monitor", "Shortcuts"]: SegButton {
+                                    width: 124px;
+                                    weight: 600;
+                                    label: name;
+                                    selected: Hub.start-page == index;
+                                    clicked => {
+                                        Hub.start-page = index;
+                                        if index == 0 {
+                                            Hub.show-music = true;
+                                        } else if index == 1 {
+                                            Hub.show-monitor = true;
+                                        } else {
+                                            Hub.show-shortcuts = true;
+                                        }
+                                        root.changed();
+                                    }
+                                }
+                            }
+                        }
+                        SettingRow {
+                            title: "Swipe to switch";
+                            subtitle: "Off: use the tabs only";
+                            VerticalLayout {
+                                alignment: center;
+                                Toggle {
+                                    on <=> Hub.swipe;
+                                    toggled => { root.changed(); }
+                                }
+                            }
+                        }
+                        SettingRow {
+                            title: "Slide animation";
+                            subtitle: "How windows move";
+                            divider: false;
+                            HorizontalLayout {
+                                spacing: 8px;
+                                for name[index] in ["Off", "Fast", "Smooth"]: SegButton {
+                                    width: 110px;
+                                    weight: 600;
+                                    label: name;
+                                    selected: Hub.slide-animation == index;
+                                    clicked => {
+                                        Hub.slide-animation = index;
+                                        root.changed();
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if root.section == 2: VerticalLayout {
+                        SectionTitle { text: "HARDWARE MONITOR"; }
+                        SettingRow {
+                            title: "Refresh interval";
+                            subtitle: "How often readings update";
+                            HorizontalLayout {
+                                spacing: 8px;
+                                for seconds in [1, 2, 5]: SegButton {
+                                    width: 72px;
+                                    weight: 600;
+                                    label: seconds + " s";
+                                    selected: Hub.refresh-seconds == seconds;
+                                    clicked => {
+                                        Hub.refresh-seconds = seconds;
+                                        root.changed();
+                                    }
+                                }
+                            }
+                        }
+                        SettingRow {
+                            title: "Temperature unit";
+                            HorizontalLayout {
+                                spacing: 8px;
+                                SegButton {
+                                    width: 124px;
+                                    weight: 600;
+                                    label: "Celsius";
+                                    selected: !Hub.fahrenheit;
+                                    clicked => {
+                                        Hub.fahrenheit = false;
+                                        root.changed();
+                                    }
+                                }
+                                SegButton {
+                                    width: 124px;
+                                    weight: 600;
+                                    label: "Fahrenheit";
+                                    selected: Hub.fahrenheit;
+                                    clicked => {
+                                        Hub.fahrenheit = true;
+                                        root.changed();
+                                    }
+                                }
+                            }
+                        }
+                        SettingRow {
+                            title: "Heat warning";
+                            subtitle: "Temperatures turn amber above " + root.temperature(Hub.heat-warning);
+                            Slider {
+                                width: 240px;
+                                height: 44px;
+                                value: (Hub.heat-warning - 65) / 30;
+                                changed(value) => { Hub.heat-warning = round(65 + value * 30); }
+                                released => { root.changed(); }
+                            }
+                        }
+                        SectionTitle {
+                            text: "CARDS";
+                            height: 48px;
+                            vertical-alignment: bottom;
+                        }
+                        Rectangle { height: 8px; }
+                        GridLayout {
+                            spacing: 12px;
+                            Row {
+                                CardChip {
+                                    label: "Memory";
+                                    on <=> Hub.show-memory;
+                                    toggled => { root.changed(); }
+                                }
+                                CardChip {
+                                    label: "Video memory";
+                                    on <=> Hub.show-video-memory;
+                                    toggled => { root.changed(); }
+                                }
+                            }
+                            Row {
+                                CardChip {
+                                    label: "Network";
+                                    on <=> Hub.show-network;
+                                    toggled => { root.changed(); }
+                                }
+                                CardChip {
+                                    label: "Storage";
+                                    on <=> Hub.show-storage;
+                                    toggled => { root.changed(); }
+                                }
+                            }
+                        }
+                    }
+
+                    if root.section == 3: VerticalLayout {
+                        SectionTitle { text: "MUSIC"; }
+                        SettingRow {
+                            title: "Player source";
+                            subtitle: "Whatever app is playing on the PC";
+                            VerticalLayout {
+                                alignment: center;
+                                Rectangle {
+                                    height: 44px;
+                                    border-radius: 12px;
+                                    background: Palette.panel;
+                                    border-width: 1px;
+                                    border-color: Palette.line;
+                                    HorizontalLayout {
+                                        padding-left: 16px;
+                                        padding-right: 16px;
+                                        Text {
+                                            text: "System media";
+                                            font-size: 14px;
+                                            color: Palette.text;
+                                            vertical-alignment: center;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        SettingRow {
+                            title: "Show album art";
+                            subtitle: "Off: controls use the full width";
+                            VerticalLayout {
+                                alignment: center;
+                                Toggle {
+                                    on <=> Hub.show-album-art;
+                                    toggled => { root.changed(); }
+                                }
+                            }
+                        }
+                        SettingRow {
+                            title: "Show output switch";
+                            subtitle: "Speaker and headphone buttons";
+                            VerticalLayout {
+                                alignment: center;
+                                Toggle {
+                                    on <=> Hub.show-outputs;
+                                    toggled => { root.changed(); }
+                                }
+                            }
+                        }
+                        SettingRow {
+                            title: "Show input switch";
+                            subtitle: "Microphone buttons";
+                            VerticalLayout {
+                                alignment: center;
+                                Toggle {
+                                    on <=> Hub.show-inputs;
+                                    toggled => { root.changed(); }
+                                }
+                            }
+                        }
+                        SettingRow {
+                            title: "Audio output";
+                            subtitle: "Current playback device";
+                            HorizontalLayout {
+                                spacing: 8px;
+                                for output[index] in Hub.outputs: SegButton {
+                                    max-width: 150px;
+                                    weight: 600;
+                                    label: output.label;
+                                    selected: output.active;
+                                    clicked => { Hub.select-output(index); }
+                                }
+                            }
+                        }
+                        SettingRow {
+                            title: "Audio input";
+                            subtitle: "Current microphone";
+                            divider: false;
+                            HorizontalLayout {
+                                spacing: 8px;
+                                for input[index] in Hub.inputs: SegButton {
+                                    max-width: 150px;
+                                    weight: 600;
+                                    label: input.label;
+                                    selected: input.active;
+                                    clicked => { Hub.select-input(index); }
+                                }
+                            }
+                        }
+                    }
+
+                    if root.section == 4: VerticalLayout {
+                        SectionTitle { text: "SHORTCUTS"; }
+                        SettingRow {
+                            title: "Show key combos on tiles";
+                            subtitle: "The small line under each label";
+                            VerticalLayout {
+                                alignment: center;
+                                Toggle {
+                                    on <=> Hub.show-key-hints;
+                                    toggled => { root.changed(); }
+                                }
+                            }
+                        }
+                        SectionTitle {
+                            text: "TILES";
+                            height: 48px;
+                            vertical-alignment: bottom;
+                        }
+                        Rectangle { height: 8px; }
+                        for item[index] in Hub.shortcuts: Rectangle {
+                            height: 56px;
+                            HorizontalLayout {
+                                spacing: 16px;
+                                Text {
+                                    width: 20px;
+                                    text: index + 1;
+                                    font-family: "JetBrains Mono";
+                                    font-size: 13px;
+                                    color: Palette.faint;
+                                    vertical-alignment: center;
+                                }
+                                Text {
+                                    text: item.label;
+                                    font-size: 15px;
+                                    font-weight: 600;
+                                    color: Palette.text;
+                                    vertical-alignment: center;
+                                    horizontal-stretch: 1;
+                                    overflow: elide;
+                                }
+                                VerticalLayout {
+                                    alignment: center;
+                                    Rectangle {
+                                        border-radius: 8px;
+                                        background: Palette.panel;
+                                        border-width: 1px;
+                                        border-color: Palette.line;
+                                        HorizontalLayout {
+                                            padding-left: 10px;
+                                            padding-right: 10px;
+                                            padding-top: 6px;
+                                            padding-bottom: 6px;
+                                            Text {
+                                                text: item.hint;
+                                                font-family: "JetBrains Mono";
+                                                font-size: 13px;
+                                                color: Palette.muted;
+                                            }
+                                        }
+                                    }
+                                }
+                                VerticalLayout {
+                                    alignment: center;
+                                    Button {
+                                        height: 44px;
+                                        fill: transparent;
+                                        clicked => { Hub.edit-config(); }
+                                        HorizontalLayout {
+                                            padding-left: 16px;
+                                            padding-right: 16px;
+                                            Text {
+                                                text: "Edit";
+                                                font-size: 14px;
+                                                font-weight: 600;
+                                                color: Palette.text;
+                                                vertical-alignment: center;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            Rectangle {
+                                y: parent.height - 1px;
+                                height: 1px;
+                                background: Palette.divider;
+                            }
+                        }
+                        Rectangle { height: 16px; }
+                        Button {
+                            height: 52px;
+                            fill: transparent;
+                            outline: Palette.line-strong;
+                            clicked => { Hub.edit-config(); }
+                            Text {
+                                text: "+ Add shortcut";
+                                font-size: 15px;
+                                font-weight: 600;
+                                color: Palette.muted;
+                            }
+                        }
+                        Text {
+                            height: 40px;
+                            text: "Edit and Add open hub.toml in Notepad; tiles update when you save it.";
+                            font-size: 13px;
+                            color: Palette.faint;
+                            vertical-alignment: bottom;
+                        }
+                    }
+
+                    if root.section == 5: VerticalLayout {
+                        SectionTitle { text: "DISPLAY & POWER"; }
+                        SettingRow {
+                            title: "Screen brightness";
+                            subtitle: Hub.brightness + "%";
+                            Slider {
+                                width: 240px;
+                                height: 44px;
+                                value: (Hub.brightness - 30) / 70;
+                                changed(value) => { Hub.brightness = round(30 + value * 70); }
+                                released => { root.changed(); }
+                            }
+                        }
+                        SettingRow {
+                            title: "Dim when idle";
+                            subtitle: "Lower brightness when nobody touches the screen";
+                            VerticalLayout {
+                                alignment: center;
+                                Toggle {
+                                    on <=> Hub.idle-dim;
+                                    toggled => { root.changed(); }
+                                }
+                            }
+                        }
+                        SettingRow {
+                            title: "Idle after";
+                            HorizontalLayout {
+                                spacing: 8px;
+                                for minutes in [1, 5, 15]: SegButton {
+                                    width: 84px;
+                                    weight: 600;
+                                    label: minutes + " min";
+                                    selected: Hub.idle-minutes == minutes;
+                                    clicked => {
+                                        Hub.idle-minutes = minutes;
+                                        root.changed();
+                                    }
+                                }
+                            }
+                        }
+                        SettingRow {
+                            title: "Screen off when PC locks";
+                            subtitle: "Wakes when you sign back in";
+                            VerticalLayout {
+                                alignment: center;
+                                Toggle {
+                                    on <=> Hub.dark-when-locked;
+                                    toggled => { root.changed(); }
+                                }
+                            }
+                        }
+                        SettingRow {
+                            title: "Close hub";
+                            subtitle: "Quits the app until it's started again";
+                            divider: false;
+                            VerticalLayout {
+                                alignment: center;
+                                Button {
+                                    height: 44px;
+                                    fill: Palette.raised;
+                                    pressed-fill: Palette.line;
+                                    clicked => { Hub.close-hub(); }
+                                    HorizontalLayout {
+                                        padding-left: 16px;
+                                        padding-right: 16px;
+                                        Text {
+                                            text: "Close hub";
+                                            font-size: 14px;
+                                            font-weight: 600;
+                                            color: Palette.text;
+                                            vertical-alignment: center;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if root.editing-hex: HexDialog {
+        width: parent.width;
+        height: parent.height;
+        draft <=> root.hex-draft;
+        cancel => { root.editing-hex = false; }
+        apply => {
+            Hub.custom-accent = root.hex-draft;
+            Palette.accent = Hub.hex-color(root.hex-draft);
+            root.editing-hex = false;
+            root.changed();
+        }
+    }
+}
+
+export component AppWindow inherits Window {
+    preferred-width: 1024px;
+    preferred-height: 600px;
+    no-frame: true;
+    title: "PC Hub";
+    icon: @image-url("icon.png");
+    background: Palette.base;
+    default-font-family: "Sora";
+
+    property <bool> settings-open;
+    property <bool> customize-open;
+    property <int> customize-section;
+    property <bool> dimmed: Hub.idle-dim && Activity.idle-seconds >= Hub.idle-minutes * 60;
+    property <bool> dark: Hub.dark-when-locked && Hub.pc-locked;
+
+    // Pages are 0 Music, 1 Monitor, 2 Shortcuts; any of them can be hidden in settings.
+    pure function page-visible(page: int) -> bool {
+        return page == 0 ? Hub.show-music : page == 1 ? Hub.show-monitor : Hub.show-shortcuts;
+    }
+    // The page on screen: the chosen one, or the first one still shown.
+    property <int> current: page-visible(Hub.slide) ? Hub.slide : Hub.show-music ? 0 : Hub.show-monitor ? 1 : 2;
+    // Where a page sits in the strip, counting only shown pages.
+    pure function position(page: int) -> int {
+        return (page > 0 && Hub.show-music ? 1 : 0) + (page > 1 && Hub.show-monitor ? 1 : 0);
+    }
+    // The next shown page to the right (step 1) or left (step -1), or the current one at the end.
+    pure function neighbour(step: int) -> int {
+        if step > 0 {
+            if root.current < 2 && page-visible(root.current + 1) {
+                return root.current + 1;
+            }
+            if root.current == 0 && page-visible(2) {
+                return 2;
+            }
+        } else {
+            if root.current > 0 && page-visible(root.current - 1) {
+                return root.current - 1;
+            }
+            if root.current == 2 && page-visible(0) {
+                return 0;
+            }
+        }
+        return root.current;
+    }
+    property <duration> slide-duration: Hub.slide-animation == 0 ? 0ms : Hub.slide-animation == 1 ? 240ms : 460ms;
+
+    Timer {
+        interval: 1s;
+        running: true;
+        triggered => { Activity.idle-seconds += 1; }
+    }
+
+    VerticalLayout {
+        // Top bar: time and date, page tabs, uptime
+        HorizontalLayout {
+            height: 60px;
+            padding-left: 20px;
+            padding-right: 20px;
+            alignment: space-between;
+
+            HorizontalLayout {
+                width: 220px;
+                spacing: 10px;
+                alignment: start;
+                Text {
+                    text: Hub.clock;
+                    font-family: "JetBrains Mono";
+                    font-size: 22px;
+                    font-weight: 600;
+                    color: Palette.text;
+                    vertical-alignment: center;
+                }
+                if Hub.show-date: VerticalLayout {
+                    padding-top: 4px;
+                    Text {
+                        text: Hub.date-text;
+                        font-size: 13px;
+                        color: Palette.muted;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+
+            VerticalLayout {
+                alignment: center;
+                Rectangle {
+                    background: Palette.panel;
+                    border-width: 1px;
+                    border-color: Palette.line;
+                    border-radius: self.height / 2;
+                    HorizontalLayout {
+                        padding: 4px;
+                        spacing: 4px;
+                        if Hub.show-music: TabButton {
+                            label: "Music";
+                            selected: root.current == 0;
+                            clicked => { Hub.slide = 0; }
+                        }
+                        if Hub.show-monitor: TabButton {
+                            label: "Monitor";
+                            selected: root.current == 1;
+                            clicked => { Hub.slide = 1; }
+                        }
+                        if Hub.show-shortcuts: TabButton {
+                            label: "Shortcuts";
+                            selected: root.current == 2;
+                            clicked => { Hub.slide = 2; }
+                        }
+                    }
+                }
+            }
+
+            HorizontalLayout {
+                width: 220px;
+                spacing: 8px;
+                alignment: end;
+                if Hub.show-uptime: VerticalLayout {
+                    alignment: center;
+                    Rectangle {
+                        width: 8px;
+                        height: 8px;
+                        border-radius: 4px;
+                        background: Palette.accent;
+                    }
+                }
+                if Hub.show-uptime: Text {
+                    text: Hub.uptime-text;
+                    font-size: 13px;
+                    color: Palette.muted;
+                    vertical-alignment: center;
+                }
+            }
+        }
+
+        // Pages side by side; the strip slides to show one at a time.
+        viewport := Rectangle {
+            vertical-stretch: 1;
+            clip: true;
+
+            SwipeGestureHandler {
+                enabled: Hub.swipe && !root.settings-open && !root.customize-open && !music.dragging;
+                handle-swipe-left: root.neighbour(1) != root.current;
+                handle-swipe-right: root.neighbour(-1) != root.current;
+                swiped => {
+                    Activity.idle-seconds = 0;
+                    if self.current-position.x - self.pressed-position.x < -60px {
+                        Hub.slide = root.neighbour(1);
+                    } else if self.current-position.x - self.pressed-position.x > 60px {
+                        Hub.slide = root.neighbour(-1);
+                    }
+                }
+
+                Rectangle {
+                    x: -root.position(root.current) * viewport.width;
+                    y: 0;
+                    width: viewport.width * 3;
+                    height: viewport.height;
+                    animate x { duration: root.slide-duration; easing: cubic-bezier(0.2, 0.8, 0.2, 1); }
+
+                    music := MusicPage {
+                        x: root.position(0) * viewport.width;
+                        y: 0;
+                        width: viewport.width;
+                        height: viewport.height;
+                        visible: Hub.show-music;
+                    }
+                    MonitorPage {
+                        x: root.position(1) * viewport.width;
+                        y: 0;
+                        width: viewport.width;
+                        height: viewport.height;
+                        visible: Hub.show-monitor;
+                        open-settings => { root.settings-open = true; }
+                    }
+                    ShortcutsPage {
+                        x: root.position(2) * viewport.width;
+                        y: 0;
+                        width: viewport.width;
+                        height: viewport.height;
+                        visible: Hub.show-shortcuts;
+                        edit-shortcuts => {
+                            root.customize-section = 4;
+                            root.customize-open = true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Settings sheet, opened from the Monitor page
+    Rectangle {
+        background: Palette.scrim.with-alpha(root.settings-open ? 0.62 : 0);
+        animate background { duration: 220ms; }
+        if root.settings-open: TapArea {
+            clicked => { root.settings-open = false; }
+        }
+    }
+    SettingsSheet {
+        x: root.settings-open ? root.width - self.width : root.width;
+        y: 0;
+        height: root.height;
+        animate x { duration: 260ms; easing: ease-out; }
+        close => { root.settings-open = false; }
+        customize => {
+            root.settings-open = false;
+            root.customize-section = 0;
+            root.customize-open = true;
+        }
+    }
+
+    if root.customize-open: CustomizeScreen {
+        section <=> root.customize-section;
+        close => { root.customize-open = false; }
+    }
+
+    // Brightness, idle dimming and the lock screen darken the whole screen;
+    // a tap while dimmed only wakes it.
+    Rectangle {
+        background: #000000.with-alpha(root.dark ? 1 : root.dimmed ? 0.85 : 1 - Hub.brightness / 100);
+        animate background { duration: 400ms; }
+    }
+    if root.dimmed: TouchArea {
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.down {
+                Activity.idle-seconds = 0;
+            }
+        }
+    }
+}
