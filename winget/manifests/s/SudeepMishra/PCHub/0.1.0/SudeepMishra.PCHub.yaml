@@ -1,0 +1,7 @@
+# Version manifest for winget. See winget/README.md for how these are published.
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.version.1.6.0.schema.json
+PackageIdentifier: SudeepMishra.PCHub
+PackageVersion: 0.1.0
+DefaultLocale: en-US
+ManifestType: version
+ManifestVersion: 1.6.0

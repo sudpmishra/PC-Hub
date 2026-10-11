@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
+PackageIdentifier: SudeepMishra.PCHub
+PackageVersion: 0.1.0
+PackageLocale: en-US
+Publisher: Sudeep Mishra
+PublisherUrl: https://github.com/sudpmishra
+PublisherSupportUrl: https://github.com/sudpmishra/PC-Hub/issues
+PackageName: PC Hub
+PackageUrl: https://github.com/sudpmishra/PC-Hub
+License: MIT
+LicenseUrl: https://github.com/sudpmishra/PC-Hub/blob/main/LICENSE
+ShortDescription: A touch dashboard for a small secondary screen
+Description: |-
+  Music controls, hardware readings, shortcut tiles and widgets (calendar, notifications,
+  clipboard, Discord, OBS) for a small touch screen beside your main monitor.
+Tags:
+  - dashboard
+  - touchscreen
+  - hardware-monitor
+  - media-controls
+  - shortcuts
+ReleaseNotesUrl: https://github.com/sudpmishra/PC-Hub/releases/tag/v0.1.0
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

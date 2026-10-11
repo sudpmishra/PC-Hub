@@ -1,11 +1,13 @@
-# PC Hub settings. Shortcut changes are picked up automatically; restart the hub
-# for anything else.
+# PC Hub settings. Changes are picked up automatically when you save this file.
 
 # Shortcut tiles per row.
 columns = 5
 
 # Accent color for highlights, gauges and the selected tab.
 accent = "#5EEAD4"
+
+# Drives on the Monitor page's storage card. Leave out for just the system drive.
+# drives = ["C:", "D:"]
 
 [window]
 # Top-left corner of the touch screen in Windows desktop coordinates (physical pixels).
@@ -21,6 +23,58 @@ fullscreen = true
 # The processor fan's name in HWiNFO, if your motherboard doesn't label it "CPU".
 # Many boards call it something like "System 1"; check HWiNFO's sensor list.
 # cpu_fan = "System 1"
+
+[weather]
+# The weather in the top bar, from Open-Meteo (free, no account). A town or city name,
+# or latitude and longitude. Leave out to hide it.
+place = "Kathmandu"
+latitude = 27.70
+longitude = 85.32
+
+[network]
+# The server whose answer time shows on the network card ("Latency"). A name or address,
+# with a port if it isn't 443. Empty hides it; it can also be turned off on the hub.
+# latency_host = "1.1.1.1"
+
+[hotkeys]
+# Key combinations on your main keyboard that show a page of the hub from any app.
+# Pick ones no other app uses; ones already taken are skipped (see pc-hub.log).
+# music = "Ctrl+Alt+1"
+# monitor = "Ctrl+Alt+2"
+# shortcuts = "Ctrl+Alt+3"
+# widgets = "Ctrl+Alt+4"
+
+# The Widgets page. Each card can be hidden under Customize hub > Widgets.
+[calendar]
+# Calendar links for today's and tomorrow's events: Google Calendar's "Secret address in
+# iCal format" (in the calendar's settings) or Outlook's published calendar ICS link.
+# urls = ["https://calendar.google.com/calendar/ical/.../basic.ics"]
+
+[notifications]
+# Show only these apps' notifications (any part of the app's name). Leave empty for all.
+# apps = ["Discord", "Teams", "Mail"]
+
+# Discord voice (who's talking, mute and deafen) needs a Discord app of your own; see the
+# README. Leave commented out to skip it.
+# [discord]
+# client_id = "123456789012345678"
+# client_secret = "..."
+# redirect_uri = "http://localhost"
+
+# OBS Studio: turn on Tools > WebSocket Server Settings in OBS, then uncomment this.
+# [obs]
+# host = "localhost"
+# port = 4455
+# password = "..."
+
+# Cards on the Monitor page for any HWiNFO reading (add them on the hub too, under
+# Customize hub > Hardware monitor). "reading" is the name HWiNFO shows; "sensor" is part
+# of its group's name, for readings with the same name in several groups; "max" draws a
+# meter that's full at that value.
+# [[card]]
+# label = "Water"
+# reading = "Coolant Temperature"
+# max = 50
 
 # Output device buttons on the Music page. "device" is any part of the name Windows
 # shows in Settings > System > Sound. Without any [[output]] entries, the hub shows
@@ -38,14 +92,42 @@ fullscreen = true
 # label = "Desk mic"
 # device = "Microphone"
 
-# Each shortcut does one of three things:
+# Each shortcut does one of these:
 #   keys = "Ctrl+Shift+M"   presses a key combination (for app hotkeys like Discord mute)
-#   action = "lock"         a built-in action: "lock" or "sleep"
+#   action = "lock"         a built-in action: lock, sleep, hibernate, shutdown, restart,
+#                           signout, screen-off, empty-recycle-bin, power-saver, balanced,
+#                           high-performance, dark-mode (switches Windows between light and
+#                           dark), or mic-mute / mute. These last three light the tile up
+#                           while dark mode is on or the microphone or sound is muted
+#   steps = [...]           a macro: steps run in order, each one of keys, action, run,
+#                           command, url or wait (seconds), e.g.
+#                           steps = [{ keys = "Ctrl+Shift+M" }, { wait = 1 }, { run = "obs64" }]
+#   command = "..."         runs PowerShell and shows the first line it prints on the
+#                           tile. Optional: refresh = 60 runs it every 60 seconds too
+#   url = "https://..."     calls a web address and shows the first line of the answer.
+#                           Optional: method = "POST", body = '{"a": 1}',
+#                           headers = { Authorization = "Bearer ..." }, refresh = 60
 #   run = "..."             opens an app, file, folder, website, or a URI such as
 #                           spotify: or ms-settings:sound. Optional: args = ["--flag"]
 # Optional: icon = one of mic, mic-off, screenshot, replay, record, lock, activity,
-#   globe, terminal, moon, music, chat, game, folder, settings, speaker, power
+#   globe, terminal, moon, music, chat, game, folder, settings, speaker, speaker-off, power.
+#   Without one, a run tile that opens an app, file or folder shows that one's own icon.
 # Optional: hint = small text under the label (defaults to the keys, or "Launch app")
+# Optional: confirm = true asks for a second tap before running (on by default for
+#   shutdown, restart, signout and empty-recycle-bin; set confirm = false to turn it off)
+# Optional: page = "Gaming" puts the tile on that shortcut page (tiles without one are on
+#   every page). A page can turn on by itself while one of its apps runs:
+#   [[page]]
+#   name = "Gaming"
+#   when_running = ["steam.exe", "cs2.exe"]
+# Optional: hold = { keys = "Alt+F10" } does something else when the tile is pressed and
+#   held, then let go without dragging. It takes one step, as in steps above.
+# Folders: folder = "Games" makes a tile that opens the tiles with in_folder = "Games"
+#   (those don't show on the page themselves).
+# More toggle actions, lit while on: wifi, bluetooth, night-light, dnd (Do Not Disturb).
+# On the hub, press and hold a tile and drag it to reorder, drop a file from Explorer or a
+# link from a browser onto the hub to add one, or delete one under Customize hub >
+# Shortcuts. This file is updated to match.
 
 [[shortcut]]
 label = "Mute mic"

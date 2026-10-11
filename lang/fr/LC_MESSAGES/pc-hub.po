@@ -1,0 +1,905 @@
+# French translation of PC Hub's interface.
+# Strings come from @tr(...) in ui/app.slint; the build bundles this file.
+msgid ""
+msgstr ""
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgid "TEMP"
+msgstr "TEMP"
+
+msgid "CLOCK"
+msgstr "FRÉQ."
+
+msgid "POWER"
+msgstr "PUISSANCE"
+
+msgid "FAN"
+msgstr "VENTILO"
+
+msgid "NOW PLAYING"
+msgstr "EN COURS"
+
+msgid "Auto"
+msgstr "Auto"
+
+msgid "♥ Like"
+msgstr "♥ J'aime"
+
+msgid "Nothing playing"
+msgstr "Rien en cours"
+
+msgid "Start music in any app to control it here"
+msgstr "Lancez de la musique dans une app pour la contrôler ici"
+
+msgid "Muted"
+msgstr "Muet"
+
+msgid "Volume"
+msgstr "Volume"
+
+msgid "Apps"
+msgstr "Apps"
+
+msgid "Output"
+msgstr "Sortie"
+
+msgid "No output devices found"
+msgstr "Aucun périphérique de sortie"
+
+msgid "Input"
+msgstr "Entrée"
+
+msgid "No input devices found"
+msgstr "Aucun périphérique d'entrée"
+
+msgid "Level"
+msgstr "Niveau"
+
+msgid "Start HWiNFO with shared memory on for temp, power and fan"
+msgstr "Lancez HWiNFO avec la mémoire partagée pour température, puissance et ventilo"
+
+msgid "BATTERIES"
+msgstr "BATTERIES"
+
+msgid "System"
+msgstr "Système"
+
+msgid "Settings"
+msgstr "Réglages"
+
+msgid "MEMORY"
+msgstr "MÉMOIRE"
+
+msgid "VIDEO MEMORY"
+msgstr "MÉMOIRE VIDÉO"
+
+msgid "NETWORK"
+msgstr "RÉSEAU"
+
+msgid "Latency {}"
+msgstr "Latence {}"
+
+msgid "STORAGE {}"
+msgstr "STOCKAGE {}"
+
+msgid "STORAGE"
+msgstr "STOCKAGE"
+
+msgid "Tap again to confirm"
+msgstr "Touchez encore pour confirmer"
+
+msgid "HOLD"
+msgstr "MAINTENIR"
+
+msgid "Shortcuts"
+msgstr "Raccourcis"
+
+msgid "Drag to a new place and let go"
+msgstr "Glissez vers un autre endroit et relâchez"
+
+msgid "Edit"
+msgstr "Modifier"
+
+msgid "Add shortcut"
+msgstr "Ajouter un raccourci"
+
+msgid "CALENDAR"
+msgstr "CALENDRIER"
+
+msgid "Refresh"
+msgstr "Actualiser"
+
+msgid "Tomorrow"
+msgstr "Demain"
+
+msgid "All day"
+msgstr "Toute la journée"
+
+msgid "NOTIFICATIONS"
+msgstr "NOTIFICATIONS"
+
+msgid "Clear all"
+msgstr "Tout effacer"
+
+msgid "CLIPBOARD"
+msgstr "PRESSE-PAPIERS"
+
+msgid "Turn on"
+msgstr "Activer"
+
+msgid "Clear"
+msgstr "Effacer"
+
+msgid "Off. Turned on, text you copy is kept here (only while the hub runs, never saved); tap one to paste it into the app in front."
+msgstr "Désactivé. Activé, le texte copié est gardé ici (seulement pendant que le hub tourne, jamais enregistré) ; touchez-en un pour le coller dans l'app au premier plan."
+
+msgid "Copy some text and it shows here. Tap it to paste it into the app in front."
+msgstr "Copiez du texte et il apparaît ici. Touchez-le pour le coller dans l'app au premier plan."
+
+msgid "DISCORD"
+msgstr "DISCORD"
+
+msgid "Unmute"
+msgstr "Réactiver le micro"
+
+msgid "Mute"
+msgstr "Couper le micro"
+
+msgid "Undeafen"
+msgstr "Réactiver le son"
+
+msgid "Deafen"
+msgstr "Couper le son"
+
+msgid "Not in a voice channel"
+msgstr "Pas dans un salon vocal"
+
+msgid "OBS"
+msgstr "OBS"
+
+msgid "Stop ● {}"
+msgstr "Arrêter ● {}"
+
+msgid "Record"
+msgstr "Enregistrer"
+
+msgid "Live {}"
+msgstr "En direct {}"
+
+msgid "Go live"
+msgstr "Passer en direct"
+
+msgid "Widgets"
+msgstr "Widgets"
+
+msgid "Calendar, notifications, clipboard, Discord and OBS"
+msgstr "Calendrier, notifications, presse-papiers, Discord et OBS"
+
+msgid "Choose"
+msgstr "Choisir"
+
+msgid "Every card is hidden. Turn some on in Customize hub > Widgets."
+msgstr "Toutes les cartes sont masquées. Activez-en dans Personnaliser le hub > Widgets."
+
+msgid "Busiest apps"
+msgstr "Apps les plus actives"
+
+msgid "Processor"
+msgstr "Processeur"
+
+msgid "Memory"
+msgstr "Mémoire"
+
+msgid "Reading processes…"
+msgstr "Lecture des processus…"
+
+msgid "Confirm"
+msgstr "Confirmer"
+
+msgid "End"
+msgstr "Terminer"
+
+msgid "Timer"
+msgstr "Minuteur"
+
+msgid "Stopwatch"
+msgstr "Chronomètre"
+
+msgid "Focus"
+msgstr "Focus"
+
+msgid "{} min"
+msgstr "{} min"
+
+msgid "+1 min"
+msgstr "+1 min"
+
+msgid "Pause"
+msgstr "Pause"
+
+msgid "Start"
+msgstr "Démarrer"
+
+msgid "Reset"
+msgstr "Réinitialiser"
+
+msgid "Stop"
+msgstr "Arrêter"
+
+msgid "BREAK"
+msgstr "PAUSE"
+
+msgid "FOCUS"
+msgstr "FOCUS"
+
+msgid "{n} round done"
+msgid_plural "{n} rounds done"
+msgstr[0] "{n} cycle terminé"
+msgstr[1] "{n} cycles terminés"
+
+msgid "{} min focus, {} min break, a longer break every 4"
+msgstr "{} min de focus, {} min de pause, une pause plus longue tous les 4"
+
+msgid "Start focusing"
+msgstr "Commencer"
+
+msgid "Resume"
+msgstr "Reprendre"
+
+msgid "Skip to break"
+msgstr "Passer à la pause"
+
+msgid "Skip break"
+msgstr "Sauter la pause"
+
+msgid "No apps are playing sound"
+msgstr "Aucune app ne joue de son"
+
+msgid "Screen brightness · {}%"
+msgstr "Luminosité · {} %"
+
+msgid "Refresh interval"
+msgstr "Intervalle d'actualisation"
+
+msgid "Temperature unit"
+msgstr "Unité de température"
+
+msgid "Celsius"
+msgstr "Celsius"
+
+msgid "Fahrenheit"
+msgstr "Fahrenheit"
+
+msgid "Dim when idle"
+msgstr "Assombrir en veille"
+
+msgid "After {n} minute without touch"
+msgid_plural "After {n} minutes without touch"
+msgstr[0] "Après {n} minute sans toucher"
+msgstr[1] "Après {n} minutes sans toucher"
+
+msgid "Customize hub"
+msgstr "Personnaliser le hub"
+
+msgid "Shown"
+msgstr "Affiché"
+
+msgid "Hidden"
+msgstr "Masqué"
+
+msgid "Custom accent"
+msgstr "Accent personnalisé"
+
+msgid "Tap Apply to use this color"
+msgstr "Touchez Appliquer pour utiliser cette couleur"
+
+msgid "Type 6 digits, for example 5EEAD4"
+msgstr "Saisissez 6 caractères, par exemple 5EEAD4"
+
+msgid "Delete"
+msgstr "Supprimer"
+
+msgid "Cancel"
+msgstr "Annuler"
+
+msgid "Apply"
+msgstr "Appliquer"
+
+msgid "Space"
+msgstr "Espace"
+
+msgid "Weather"
+msgstr "Météo"
+
+msgid "Feels like {}"
+msgstr "Ressenti {}"
+
+msgid "HIGH / LOW"
+msgstr "MAX / MIN"
+
+msgid "RAIN"
+msgstr "PLUIE"
+
+msgid "HUMIDITY"
+msgstr "HUMIDITÉ"
+
+msgid "WIND"
+msgstr "VENT"
+
+msgid "SUNRISE"
+msgstr "LEVER"
+
+msgid "SUNSET"
+msgstr "COUCHER"
+
+msgid "From Open-Meteo · updated every 15 minutes"
+msgstr "Par Open-Meteo · mis à jour toutes les 15 minutes"
+
+msgid "New tile"
+msgstr "Nouvelle tuile"
+
+msgid "Edit tile"
+msgstr "Modifier la tuile"
+
+msgid "Save"
+msgstr "Enregistrer"
+
+msgid "Name"
+msgstr "Nom"
+
+msgid "Shown on the tile"
+msgstr "Affiché sur la tuile"
+
+msgid "Type"
+msgstr "Saisir"
+
+msgid "What it does"
+msgstr "Ce qu'elle fait"
+
+msgid "Runs a command, web request or macro; change that in hub.toml"
+msgstr "Lance une commande, une requête web ou une macro ; modifiez-la dans hub.toml"
+
+msgid "Press keys"
+msgstr "Appuyer sur des touches"
+
+msgid "Action"
+msgstr "Action"
+
+msgid "Open"
+msgstr "Ouvrir"
+
+msgid "Keys"
+msgstr "Touches"
+
+msgid "Pick the modifiers and a key"
+msgstr "Choisissez les modificateurs et une touche"
+
+msgid "Key…"
+msgstr "Touche…"
+
+msgid "Opens"
+msgstr "Ouvre"
+
+msgid "An app (notepad), folder, website (https://…) or URI (ms-settings:sound)"
+msgstr "Une app (notepad), un dossier, un site (https://…) ou une URI (ms-settings:sound)"
+
+msgid "Icon"
+msgstr "Icône"
+
+msgid "None shows the app's own icon when there is one"
+msgstr "Aucune affiche l'icône de l'app s'il y en a une"
+
+msgid "Pick one for the tile"
+msgstr "Choisissez-en une pour la tuile"
+
+msgid "None"
+msgstr "Aucune"
+
+msgid "Page"
+msgstr "Page"
+
+msgid "On every shortcut page"
+msgstr "Sur chaque page de raccourcis"
+
+msgid "Only on {}"
+msgstr "Seulement sur {}"
+
+msgid "All"
+msgstr "Toutes"
+
+msgid "Tile name"
+msgstr "Nom de la tuile"
+
+msgid "Key to press"
+msgstr "Touche à presser"
+
+msgid "What the tile opens"
+msgstr "Ce que la tuile ouvre"
+
+msgid "Mute mic"
+msgstr "Couper le micro"
+
+msgid "Pick a key"
+msgstr "Choisissez une touche"
+
+msgid "https://example.com or notepad"
+msgstr "https://example.com ou notepad"
+
+msgid "Pick a reading"
+msgstr "Choisissez une mesure"
+
+msgid "No readings: start HWiNFO with Shared Memory Support turned on in its settings."
+msgstr "Aucune mesure : lancez HWiNFO avec Shared Memory Support activé dans ses réglages."
+
+msgid "Back"
+msgstr "Retour"
+
+msgid "Reset to defaults"
+msgstr "Réinitialiser"
+
+msgid "Appearance"
+msgstr "Apparence"
+
+msgid "Windows"
+msgstr "Fenêtres"
+
+msgid "Hardware monitor"
+msgstr "Moniteur matériel"
+
+msgid "Music"
+msgstr "Musique"
+
+msgid "Display & power"
+msgstr "Affichage et énergie"
+
+msgid "Changes apply instantly"
+msgstr "Les changements s'appliquent aussitôt"
+
+msgid "APPEARANCE"
+msgstr "APPARENCE"
+
+msgid "Theme"
+msgstr "Thème"
+
+msgid "Follows Windows' app mode"
+msgstr "Suit le mode des apps de Windows"
+
+msgid "Dark or light background"
+msgstr "Fond sombre ou clair"
+
+msgid "Dark"
+msgstr "Sombre"
+
+msgid "Light"
+msgstr "Clair"
+
+msgid "Accent color"
+msgstr "Couleur d'accent"
+
+msgid "Gauges, active tabs and highlights"
+msgstr "Jauges, onglets actifs et surlignages"
+
+msgid "Custom color"
+msgstr "Couleur personnalisée"
+
+msgid "Any color, by its hex code"
+msgstr "N'importe quelle couleur, par son code hex"
+
+msgid "Enter hex code"
+msgstr "Saisir le code hex"
+
+msgid "Clock format"
+msgstr "Format de l'heure"
+
+msgid "Shown in the top bar"
+msgstr "Dans la barre du haut"
+
+msgid "24-hour"
+msgstr "24 heures"
+
+msgid "12-hour"
+msgstr "12 heures"
+
+msgid "Show date"
+msgstr "Afficher la date"
+
+msgid "Next to the clock"
+msgstr "À côté de l'heure"
+
+msgid "Show uptime"
+msgstr "Afficher la durée de fonctionnement"
+
+msgid "Top-right indicator"
+msgstr "Indicateur en haut à droite"
+
+msgid "Show weather"
+msgstr "Afficher la météo"
+
+msgid "Top bar, updated every 15 minutes"
+msgstr "Barre du haut, mise à jour toutes les 15 minutes"
+
+msgid "Accent from album art"
+msgstr "Accent de la pochette"
+
+msgid "While music plays, take the accent from the cover"
+msgstr "Pendant la musique, prendre l'accent de la pochette"
+
+msgid "Language"
+msgstr "Langue"
+
+msgid "Follows Windows"
+msgstr "Suit Windows"
+
+msgid "For the hub's buttons and labels"
+msgstr "Pour les boutons et libellés du hub"
+
+msgid "Weather place"
+msgstr "Lieu de la météo"
+
+msgid "Set place"
+msgstr "Choisir le lieu"
+
+msgid "Change"
+msgstr "Changer"
+
+msgid "WINDOWS"
+msgstr "FENÊTRES"
+
+msgid "Music window"
+msgstr "Fenêtre Musique"
+
+msgid "Now playing and volume"
+msgstr "Lecture en cours et volume"
+
+msgid "Monitor window"
+msgstr "Fenêtre Moniteur"
+
+msgid "CPU, GPU and system stats"
+msgstr "CPU, GPU et statistiques système"
+
+msgid "Shortcuts window"
+msgstr "Fenêtre Raccourcis"
+
+msgid "Tiles that send key combos"
+msgstr "Tuiles qui envoient des raccourcis clavier"
+
+msgid "Widgets window"
+msgstr "Fenêtre Widgets"
+
+msgid "Open on"
+msgstr "Ouvrir sur"
+
+msgid "Window shown when the hub starts"
+msgstr "Fenêtre affichée au démarrage du hub"
+
+msgid "Monitor"
+msgstr "Moniteur"
+
+msgid "Swipe to switch"
+msgstr "Balayer pour changer"
+
+msgid "Off: use the tabs only"
+msgstr "Désactivé : onglets seulement"
+
+msgid "Slide animation"
+msgstr "Animation de défilement"
+
+msgid "How windows move"
+msgstr "Comment les fenêtres glissent"
+
+msgid "Off"
+msgstr "Non"
+
+msgid "Fast"
+msgstr "Rapide"
+
+msgid "Smooth"
+msgstr "Douce"
+
+msgid "HARDWARE MONITOR"
+msgstr "MONITEUR MATÉRIEL"
+
+msgid "How often readings update"
+msgstr "Fréquence de mise à jour"
+
+msgid "Heat warning"
+msgstr "Alerte de chaleur"
+
+msgid "Temperatures turn amber above {}"
+msgstr "Les températures passent à l'orange au-dessus de {}"
+
+msgid "History graphs"
+msgstr "Graphiques d'historique"
+
+msgid "The last minute behind processor, graphics and network"
+msgstr "La dernière minute derrière processeur, graphique et réseau"
+
+msgid "Network latency"
+msgstr "Latence réseau"
+
+msgid "How long a server takes to answer, on the network card (latency_host in hub.toml)"
+msgstr "Temps de réponse d'un serveur, sur la carte réseau (latency_host dans hub.toml)"
+
+msgid "CARDS"
+msgstr "CARTES"
+
+msgid "Video memory"
+msgstr "Mémoire vidéo"
+
+msgid "Network"
+msgstr "Réseau"
+
+msgid "Storage"
+msgstr "Stockage"
+
+msgid "Device batteries"
+msgstr "Batteries des appareils"
+
+msgid "Sensor cards"
+msgstr "Cartes de capteurs"
+
+msgid "SENSOR CARDS"
+msgstr "CARTES DE CAPTEURS"
+
+msgid "A card of its own for any HWiNFO reading: water temperature, pump speed, motherboard sensors. Device batteries show headsets, controllers and phones that report their charge to Windows."
+msgstr "Une carte à part pour toute mesure HWiNFO : température de l'eau, vitesse de pompe, capteurs de carte mère. Les batteries montrent casques, manettes et téléphones qui signalent leur charge à Windows."
+
+msgid "Remove"
+msgstr "Retirer"
+
+msgid "+ Add a sensor card"
+msgstr "+ Ajouter une carte de capteur"
+
+msgid "MUSIC"
+msgstr "MUSIQUE"
+
+msgid "Player source"
+msgstr "Source du lecteur"
+
+msgid "Whatever app is playing on the PC"
+msgstr "L'app qui joue sur le PC"
+
+msgid "System media"
+msgstr "Médias système"
+
+msgid "Show album art"
+msgstr "Afficher la pochette"
+
+msgid "Off: controls use the full width"
+msgstr "Désactivé : les commandes prennent toute la largeur"
+
+msgid "Show output switch"
+msgstr "Afficher le choix de sortie"
+
+msgid "Speaker and headphone buttons"
+msgstr "Boutons haut-parleurs et casque"
+
+msgid "Show input switch"
+msgstr "Afficher le choix d'entrée"
+
+msgid "Microphone buttons"
+msgstr "Boutons de micro"
+
+msgid "Microphone level"
+msgstr "Niveau du micro"
+
+msgid "A live meter under Input. Windows shows the mic as in use while it's on screen"
+msgstr "Un vumètre sous Entrée. Windows indique le micro comme utilisé tant qu'il est affiché"
+
+msgid "Audio output"
+msgstr "Sortie audio"
+
+msgid "Current playback device"
+msgstr "Périphérique de lecture actuel"
+
+msgid "Audio input"
+msgstr "Entrée audio"
+
+msgid "Current microphone"
+msgstr "Micro actuel"
+
+msgid "SHORTCUTS"
+msgstr "RACCOURCIS"
+
+msgid "Show key combos on tiles"
+msgstr "Afficher les raccourcis sur les tuiles"
+
+msgid "The small line under each label"
+msgstr "La petite ligne sous chaque nom"
+
+msgid "TILES"
+msgstr "TUILES"
+
+msgid "+ Add shortcut"
+msgstr "+ Ajouter un raccourci"
+
+msgid "Open hub.toml"
+msgstr "Ouvrir hub.toml"
+
+msgid "Edit and Add change tiles right here. Open hub.toml (in Notepad) for commands, web requests and macros; tiles update when you save it. To reorder tiles, press and hold one on the Shortcuts page, then drag it. To add a tile for a file, folder, app or internet shortcut, drag it from Explorer onto the hub."
+msgstr "Modifier et Ajouter changent les tuiles ici même. Ouvrez hub.toml (dans le Bloc-notes) pour les commandes, requêtes web et macros ; les tuiles se mettent à jour à l'enregistrement. Pour réordonner, maintenez une tuile sur la page Raccourcis puis faites-la glisser. Pour ajouter une tuile vers un fichier, dossier, app ou lien, faites-le glisser depuis l'Explorateur sur le hub."
+
+msgid "WIDGETS"
+msgstr "WIDGETS"
+
+msgid "Calendar"
+msgstr "Calendrier"
+
+msgid "Today's and tomorrow's events, from links under [calendar] in hub.toml"
+msgstr "Événements d'aujourd'hui et demain, depuis les liens sous [calendar] dans hub.toml"
+
+msgid "Notifications"
+msgstr "Notifications"
+
+msgid "From the apps under [notifications] in hub.toml, or every app"
+msgstr "Des apps sous [notifications] dans hub.toml, ou de toutes"
+
+msgid "Clipboard card"
+msgstr "Carte du presse-papiers"
+
+msgid "Tap copied text to paste it into the app in front"
+msgstr "Touchez un texte copié pour le coller dans l'app au premier plan"
+
+msgid "Keep clipboard history"
+msgstr "Garder l'historique du presse-papiers"
+
+msgid "Remembers copied text while the hub runs; never saved. Password managers' copies are skipped"
+msgstr "Retient le texte copié tant que le hub tourne ; jamais enregistré. Les copies des gestionnaires de mots de passe sont ignorées"
+
+msgid "Discord voice"
+msgstr "Vocal Discord"
+
+msgid "Who's talking, with mute and deafen; needs [discord] in hub.toml (see the README)"
+msgstr "Qui parle, avec micro et son coupés ; nécessite [discord] dans hub.toml (voir le README)"
+
+msgid "Scenes, recording and streaming; needs [obs] in hub.toml and OBS's WebSocket server on"
+msgstr "Scènes, enregistrement et diffusion ; nécessite [obs] dans hub.toml et le serveur WebSocket d'OBS activé"
+
+msgid "DISPLAY & POWER"
+msgstr "AFFICHAGE ET ÉNERGIE"
+
+msgid "Screen brightness"
+msgstr "Luminosité de l'écran"
+
+msgid "Use the monitor's backlight"
+msgstr "Utiliser le rétroéclairage du moniteur"
+
+msgid "Lower brightness when nobody touches the screen"
+msgstr "Baisser la luminosité quand personne ne touche l'écran"
+
+msgid "Idle after"
+msgstr "Veille après"
+
+msgid "Clock when idle"
+msgstr "Horloge en veille"
+
+msgid "A dim clock on the dimmed screen"
+msgstr "Une horloge discrète sur l'écran assombri"
+
+msgid "Screen"
+msgstr "Écran"
+
+msgid "Where the hub opens"
+msgstr "Où le hub s'ouvre"
+
+msgid "Only one screen is connected"
+msgstr "Un seul écran est connecté"
+
+msgid "Screen off when PC locks"
+msgstr "Écran éteint quand le PC est verrouillé"
+
+msgid "Wakes when you sign back in"
+msgstr "Se rallume à la reconnexion"
+
+msgid "Full screen"
+msgstr "Plein écran"
+
+msgid "Off: drag the top bar to move the hub, and its corner to resize it"
+msgstr "Désactivé : faites glisser la barre du haut pour déplacer le hub, et son coin pour le redimensionner"
+
+msgid "Start with Windows"
+msgstr "Démarrer avec Windows"
+
+msgid "Open the hub when you sign in"
+msgstr "Ouvrir le hub à la connexion"
+
+msgid "Check for updates"
+msgstr "Rechercher des mises à jour"
+
+msgid "Download"
+msgstr "Télécharger"
+
+msgid "Back up settings"
+msgstr "Sauvegarder les réglages"
+
+msgid "Copies hub.toml and these settings into the backups folder"
+msgstr "Copie hub.toml et ces réglages dans le dossier backups"
+
+msgid "Back up now"
+msgstr "Sauvegarder maintenant"
+
+msgid "Restoring backs up the current settings first"
+msgstr "La restauration sauvegarde d'abord les réglages actuels"
+
+msgid "Restore"
+msgstr "Restaurer"
+
+msgid "Profiles"
+msgstr "Profils"
+
+msgid "Using {}; changes are kept with it"
+msgstr "{} est utilisé ; les changements y sont gardés"
+
+msgid "Save as…"
+msgstr "Enregistrer sous…"
+
+msgid "In use"
+msgstr "Utilisé"
+
+msgid "Switch"
+msgstr "Basculer"
+
+msgid "Close hub"
+msgstr "Fermer le hub"
+
+msgid "Quits the app until it's started again"
+msgstr "Quitte l'app jusqu'à son prochain démarrage"
+
+msgid "Town or city, e.g. Amsterdam"
+msgstr "Ville, par exemple Amsterdam"
+
+msgid "Use hub.toml's place"
+msgstr "Utiliser le lieu de hub.toml"
+
+msgid "Look it up"
+msgstr "Rechercher"
+
+msgid "Save as a profile"
+msgstr "Enregistrer comme profil"
+
+msgid "Gaming, Work…"
+msgstr "Jeux, Travail…"
+
+msgid "This folder is empty. In hub.toml, give tiles in_folder = \"{}\"."
+msgstr "Ce dossier est vide. Dans hub.toml, donnez aux tuiles in_folder = \"{}\"."
+
+msgid "Focus {}"
+msgstr "Focus {}"
+
+msgid "Break {}"
+msgstr "Pause {}"
+
+msgid "Timer {}"
+msgstr "Minuteur {}"
+
+msgid "Stopwatch {}"
+msgstr "Chrono {}"
+
+msgid "Charging {}"
+msgstr "En charge {}"
+
+msgid "Battery {}"
+msgstr "Batterie {}"
+
+msgid "Time's up"
+msgstr "C'est l'heure"
+
+msgid "{} timer"
+msgstr "Minuteur de {}"
+
+msgid "Dismiss"
+msgstr "Fermer"
+
+msgid "Start again"
+msgstr "Recommencer"
+
+msgid "Drop to add a shortcut"
+msgstr "Déposez pour ajouter un raccourci"
+
+msgid "Files, folders, apps and links from a browser"
+msgstr "Fichiers, dossiers, apps et liens d'un navigateur"
+

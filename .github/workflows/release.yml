@@ -1,0 +1,56 @@
+name: Release
+
+# Push a tag such as v0.2.0 to build the hub and attach it to a GitHub release.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Test
+        run: cargo test --locked
+      - name: Build
+        run: cargo build --release --locked
+      - name: Package
+        shell: pwsh
+        run: |
+          $name = "pc-hub-${{ github.ref_name }}-windows-x64"
+          New-Item -ItemType Directory $name | Out-Null
+          Copy-Item target\release\pc-hub.exe, hub.toml, README.md, LICENSE $name
+          Compress-Archive -Path $name -DestinationPath "$name.zip"
+      - name: Installer
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress -y
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DAppVersion=$version" installer\pc-hub.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            pc-hub-*.zip
+            dist/pc-hub-setup-*.exe
+          generate_release_notes: true
+
+  # Once the package is in winget (see winget/README.md), opens the pull request that
+  # updates it there. Skipped until a WINGET_TOKEN secret is added.
+  winget:
+    needs: release
+    runs-on: windows-latest
+    env:
+      WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+    steps:
+      - if: env.WINGET_TOKEN != ''
+        uses: vedantmgoyal9/winget-releaser@v2
+        with:
+          identifier: SudeepMishra.PCHub
+          installers-regex: 'pc-hub-setup-.*\.exe$'
+          token: ${{ secrets.WINGET_TOKEN }}

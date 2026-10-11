@@ -18,6 +18,51 @@ pub enum MediaCommand {
     Previous,
     ToggleShuffle,
     ToggleRepeat,
+    /// Jump to this fraction of the track, 0.0 to 1.0.
+    Seek(f32),
+    /// Control the player at this index in the list on screen, or -1 for whichever
+    /// Windows picks (the one in the volume flyout).
+    ChoosePlayer(i32),
+}
+
+/// The apps with a media session, for choosing which one the controls act on.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Players {
+    pub labels: Vec<String>,
+    /// The one being controlled, or -1 if none.
+    pub current: i32,
+    /// Following Windows' choice rather than one picked on the hub.
+    pub automatic: bool,
+}
+
+/// A short name from a media session's app id: "Spotify.exe" -> "Spotify",
+/// "Microsoft.ZuneMusic_8wekyb3d8bbwe!Microsoft.ZuneMusic" -> "ZuneMusic", "MSEdge" -> "Edge".
+pub fn player_name(app_id: &str) -> String {
+    let name = app_id.rsplit(['!', '\\']).next().unwrap_or(app_id);
+    let name = name.strip_suffix(".exe").or_else(|| name.strip_suffix(".EXE")).unwrap_or(name);
+    let name = name.rsplit('.').next().unwrap_or(name);
+    match name.to_lowercase().as_str() {
+        "msedge" => "Edge".into(),
+        "zunemusic" => "Media Player".into(),
+        "vlc" => "VLC".into(),
+        _ => {
+            let mut chars = name.chars();
+            chars
+                .next()
+                .map(|c| c.to_uppercase().chain(chars).collect())
+                .unwrap_or_default()
+        }
+    }
+}
+
+fn publish_players(ui: &slint::Weak<AppWindow>, players: Players) {
+    let _ = ui.upgrade_in_event_loop(move |ui| {
+        let hub = ui.global::<Hub>();
+        let labels: Vec<slint::SharedString> = players.labels.iter().map(|l| l.as_str().into()).collect();
+        hub.set_players(slint::ModelRc::from(std::rc::Rc::new(slint::VecModel::from(labels))));
+        hub.set_current_player(players.current);
+        hub.set_player_automatic(players.automatic);
+    });
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -33,6 +78,7 @@ pub struct MediaState {
     pub repeat: bool,
     pub can_shuffle: bool,
     pub can_repeat: bool,
+    pub can_seek: bool,
 }
 
 pub fn spawn(ui: slint::Weak<AppWindow>) -> Sender<MediaCommand> {
@@ -68,10 +114,12 @@ fn publish(ui: &slint::Weak<AppWindow>, state: MediaState) {
         hub.set_repeat(state.repeat);
         hub.set_can_shuffle(state.can_shuffle);
         hub.set_can_repeat(state.can_repeat);
+        hub.set_can_seek(state.can_seek);
     });
 }
 
 fn publish_art(ui: &slint::Weak<AppWindow>, art: Option<SharedPixelBuffer<Rgba8Pixel>>) {
+    let color = art.as_ref().and_then(|pixels| main_color(pixels.as_slice()));
     let _ = ui.upgrade_in_event_loop(move |ui| {
         let hub = ui.global::<Hub>();
         match art {
@@ -84,7 +132,73 @@ fn publish_art(ui: &slint::Weak<AppWindow>, art: Option<SharedPixelBuffer<Rgba8P
                 hub.set_album_art(slint::Image::default());
             }
         }
+        let palette = ui.global::<crate::Palette>();
+        palette.set_has_art_color(color.is_some());
+        if let Some([r, g, b]) = color {
+            palette.set_art(slint::Color::from_rgb_u8(r, g, b));
+        }
     });
+}
+
+/// The cover's most common lively color, made light enough to read dark text on, for the
+/// accent while music plays. None for covers that are all grey.
+fn main_color(pixels: &[Rgba8Pixel]) -> Option<[u8; 3]> {
+    // Count colors in coarse buckets (4 bits a channel), weighted by how vivid they are.
+    let mut buckets = vec![(0f32, [0f32; 3]); 4096];
+    for pixel in pixels.iter().step_by(7) {
+        let [r, g, b] = [pixel.r, pixel.g, pixel.b].map(f32::from);
+        let (max, min) = (r.max(g).max(b), r.min(g).min(b));
+        let saturation = if max > 0.0 { (max - min) / max } else { 0.0 };
+        // Near-black, near-white and grey pixels say little about the cover's color.
+        if max < 40.0 || saturation < 0.25 {
+            continue;
+        }
+        let index = ((pixel.r as usize >> 4) << 8) | ((pixel.g as usize >> 4) << 4) | (pixel.b as usize >> 4);
+        let weight = saturation * saturation;
+        let bucket = &mut buckets[index];
+        bucket.0 += weight;
+        for (sum, value) in bucket.1.iter_mut().zip([r, g, b]) {
+            *sum += value * weight;
+        }
+    }
+    let (weight, sums) = buckets.into_iter().max_by(|a, b| a.0.total_cmp(&b.0))?;
+    if weight <= 0.0 {
+        return None;
+    }
+    Some(readable(sums.map(|s| s / weight)))
+}
+
+/// Lifts a color's lightness and saturation so it works as an accent on the dark theme,
+/// with dark text on it.
+fn readable([r, g, b]: [f32; 3]) -> [u8; 3] {
+    let [r, g, b] = [r / 255.0, g / 255.0, b / 255.0];
+    let (max, min) = (r.max(g).max(b), r.min(g).min(b));
+    let lightness = (max + min) / 2.0;
+    let delta = max - min;
+    let mut saturation = if delta == 0.0 { 0.0 } else { delta / (1.0 - (2.0 * lightness - 1.0).abs()) };
+    let hue = if delta == 0.0 {
+        0.0
+    } else if max == r {
+        60.0 * (((g - b) / delta).rem_euclid(6.0))
+    } else if max == g {
+        60.0 * ((b - r) / delta + 2.0)
+    } else {
+        60.0 * ((r - g) / delta + 4.0)
+    };
+    saturation = saturation.clamp(0.45, 0.9);
+    let lightness = lightness.clamp(0.62, 0.78);
+    let chroma = (1.0 - (2.0 * lightness - 1.0).abs()) * saturation;
+    let x = chroma * (1.0 - ((hue / 60.0).rem_euclid(2.0) - 1.0).abs());
+    let (r, g, b) = match hue as u32 / 60 {
+        0 => (chroma, x, 0.0),
+        1 => (x, chroma, 0.0),
+        2 => (0.0, chroma, x),
+        3 => (0.0, x, chroma),
+        4 => (x, 0.0, chroma),
+        _ => (chroma, 0.0, x),
+    };
+    let m = lightness - chroma / 2.0;
+    [r, g, b].map(|c| ((c + m) * 255.0).round().clamp(0.0, 255.0) as u8)
 }
 
 fn format_time(secs: u64) -> String {
@@ -149,10 +263,20 @@ mod backend {
         // The track the current cover belongs to, and how many more times to look for one.
         let mut art_track: Option<(String, String, String)> = None;
         let mut art_attempts_left = 0;
+        // The app picked on the hub, by app id; None follows Windows' choice.
+        let mut chosen: Option<String> = None;
+        let mut app_ids: Vec<String> = Vec::new();
+        let mut last_players: Option<Players> = None;
         loop {
             match rx.recv_timeout(POLL_INTERVAL) {
+                Ok(MediaCommand::ChoosePlayer(index)) => {
+                    chosen = usize::try_from(index).ok().and_then(|i| app_ids.get(i).cloned());
+                }
                 Ok(command) => {
-                    if let Err(err) = send(&manager, command) {
+                    let result = pick(&manager, chosen.as_deref())
+                        .ok_or_else(|| windows::core::Error::from_hresult(windows::core::HRESULT(-1)))
+                        .and_then(|session| send(&session, command));
+                    if let Err(err) = result {
                         eprintln!("media: {command:?} failed: {err}");
                     }
                     // Give the player a moment to react before reading its state back.
@@ -162,7 +286,24 @@ mod backend {
                 Err(RecvTimeoutError::Disconnected) => return,
             }
 
-            let session = manager.GetCurrentSession().ok();
+            let session = pick(&manager, chosen.as_deref());
+            app_ids = all_sessions(&manager)
+                .iter()
+                .filter_map(|s| s.SourceAppUserModelId().ok().map(|id| id.to_string()))
+                .collect();
+            let current_id = session.as_ref().and_then(|s| s.SourceAppUserModelId().ok()).map(|id| id.to_string());
+            let players = Players {
+                labels: app_ids.iter().map(|id| player_name(id)).collect(),
+                current: current_id
+                    .and_then(|id| app_ids.iter().position(|a| *a == id))
+                    .map_or(-1, |i| i as i32),
+                automatic: chosen.as_ref().is_none_or(|c| !app_ids.contains(c)),
+            };
+            if last_players.as_ref() != Some(&players) {
+                publish_players(&ui, players.clone());
+                last_players = Some(players);
+            }
+
             let props = session
                 .as_ref()
                 .and_then(|s| s.TryGetMediaPropertiesAsync().and_then(|op| op.join()).ok());
@@ -192,8 +333,22 @@ mod backend {
         }
     }
 
-    fn send(manager: &SessionManager, command: MediaCommand) -> windows::core::Result<()> {
-        let session = manager.GetCurrentSession()?;
+    fn all_sessions(manager: &SessionManager) -> Vec<Session> {
+        manager.GetSessions().map(|list| list.into_iter().collect()).unwrap_or_default()
+    }
+
+    /// The session picked on the hub while it's still open, or else Windows' current one.
+    fn pick(manager: &SessionManager, chosen: Option<&str>) -> Option<Session> {
+        chosen
+            .and_then(|id| {
+                all_sessions(manager)
+                    .into_iter()
+                    .find(|s| s.SourceAppUserModelId().is_ok_and(|a| a == id))
+            })
+            .or_else(|| manager.GetCurrentSession().ok())
+    }
+
+    fn send(session: &Session, command: MediaCommand) -> windows::core::Result<()> {
         let operation = match command {
             MediaCommand::PlayPause => session.TryTogglePlayPauseAsync()?,
             MediaCommand::Next => session.TrySkipNextAsync()?,
@@ -209,6 +364,14 @@ mod backend {
                 let next = if mode == RepeatMode::None { RepeatMode::List } else { RepeatMode::None };
                 session.TryChangeAutoRepeatModeAsync(next)?
             }
+            MediaCommand::Seek(fraction) => {
+                let timeline = session.GetTimelineProperties()?;
+                let start = timeline.StartTime()?.Duration;
+                let end = timeline.EndTime()?.Duration;
+                let target = start + ((end - start).max(0) as f64 * fraction.clamp(0.0, 1.0) as f64) as i64;
+                session.TryChangePlaybackPositionAsync(target)?
+            }
+            MediaCommand::ChoosePlayer(_) => return Ok(()),
         };
         operation.join()?;
         Ok(())
@@ -244,6 +407,7 @@ mod backend {
                 .is_some_and(|mode| mode != RepeatMode::None),
             can_shuffle: controls.as_ref().and_then(|c| c.IsShuffleEnabled().ok()).unwrap_or(false),
             can_repeat: controls.as_ref().and_then(|c| c.IsRepeatEnabled().ok()).unwrap_or(false),
+            can_seek: controls.as_ref().and_then(|c| c.IsPlaybackPositionEnabled().ok()).unwrap_or(false),
         }
     }
 
@@ -295,10 +459,41 @@ mod backend {
 
     pub fn run(rx: Receiver<MediaCommand>, ui: slint::Weak<AppWindow>) {
         publish(&ui, MediaState::default());
-        let _ = (publish_art, decode_art);
+        let _ = (publish_art, decode_art, publish_players);
         // Drain commands until the UI closes so button presses don't error.
         while let Ok(command) = rx.recv() {
             eprintln!("media: {command:?} ignored (only supported on Windows)");
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::player_name;
+
+    #[test]
+    fn player_names() {
+        assert_eq!(player_name("Spotify.exe"), "Spotify");
+        assert_eq!(player_name("Chrome"), "Chrome");
+        assert_eq!(player_name("MSEdge"), "Edge");
+        assert_eq!(player_name("Microsoft.ZuneMusic_8wekyb3d8bbwe!Microsoft.ZuneMusic"), "Media Player");
+        assert_eq!(player_name(r"C:\Program Files\VideoLAN\VLC\vlc.exe"), "VLC");
+        assert_eq!(player_name("SpotifyAB.SpotifyMusic_zpdnekdrzrea0!Spotify"), "Spotify");
+    }
+}
+
+#[cfg(test)]
+mod color_tests {
+    use super::*;
+
+    #[test]
+    fn cover_colors() {
+        let red = Rgba8Pixel { r: 200, g: 30, b: 30, a: 255 };
+        let grey = Rgba8Pixel { r: 120, g: 120, b: 120, a: 255 };
+        let mut cover = vec![grey; 700];
+        cover.extend(vec![red; 300]);
+        let [r, g, b] = main_color(&cover).unwrap();
+        assert!(r > 200 && g < 160 && b < 160, "{r} {g} {b}");
+        assert_eq!(main_color(&[grey; 100]), None);
     }
 }

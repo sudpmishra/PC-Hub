@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.6.0.schema.json
+PackageIdentifier: SudeepMishra.PCHub
+PackageVersion: 0.1.0
+InstallerType: inno
+Scope: user
+InstallModes:
+  - interactive
+  - silent
+UpgradeBehavior: install
+Installers:
+  - Architecture: x64
+    InstallerUrl: https://github.com/sudpmishra/PC-Hub/releases/download/v0.1.0/pc-hub-setup-0.1.0.exe
+    # Fill in from the release: (Get-FileHash pc-hub-setup-0.1.0.exe).Hash
+    InstallerSha256: 0000000000000000000000000000000000000000000000000000000000000000
+ManifestType: installer
+ManifestVersion: 1.6.0
