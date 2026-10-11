@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
 PackageIdentifier: SudeepMishra.PCHub
-PackageVersion: 0.1.0
+PackageVersion: 1.0.0
 PackageLocale: en-US
 Publisher: Sudeep Mishra
 PublisherUrl: https://github.com/sudpmishra
@@ -19,6 +19,6 @@ Tags:
   - hardware-monitor
   - media-controls
   - shortcuts
-ReleaseNotesUrl: https://github.com/sudpmishra/PC-Hub/releases/tag/v0.1.0
+ReleaseNotesUrl: https://github.com/sudpmishra/PC-Hub/releases/tag/v1.0.0
 ManifestType: defaultLocale
 ManifestVersion: 1.6.0
